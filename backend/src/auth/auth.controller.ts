@@ -17,14 +17,6 @@ export class AuthController {
 
   @Post('login')
   async login(@Body(ValidationPipe) loginDto: LoginDto) {
-    const user = await this.authService.validateUser(
-      loginDto.email,
-      loginDto.password,
-    );
-    // In Phase 7, this will return a JWT token
-    return {
-      access_token: 'jwt-token-placeholder',
-      user,
-    };
+    return this.authService.login(loginDto.email, loginDto.password);
   }
 }

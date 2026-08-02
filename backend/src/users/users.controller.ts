@@ -1,18 +1,19 @@
 import { Controller, Get, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Request() req) {
-    // For now, return a mock user until JWT is implemented
-    // In Phase 7, this will use the JWT guard to get the actual user
+    const user = await this.usersService.findById(req.user.id);
     return {
-      id: '1',
-      name: 'Ali',
-      email: 'ali@example.com',
+      id: user.id,
+      name: user.name,
+      email: user.email,
       avatar: null,
       defaultCity: 'New York',
       temperatureUnit: 'C',

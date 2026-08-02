@@ -13,7 +13,7 @@ interface AuthState {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isAuthenticated: false,
@@ -32,15 +32,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     const data = await response.json();
     set({
       token: data.access_token,
+      user: data.user,
       isAuthenticated: true,
     });
-
-    // Fetch user profile after login
-    const profileResponse = await fetch(`${API_URL}/users/me`);
-    if (profileResponse.ok) {
-      const user = await profileResponse.json();
-      set({ user });
-    }
   },
 
   register: async (email: string, password: string, name?: string) => {
@@ -54,17 +48,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       throw new Error("Registration failed");
     }
 
-    // Auto-login after registration
     const data = await response.json();
     set({
-      user: {
-        id: data.id,
-        email: data.email,
-        name: data.name || null,
-        avatar: null,
-        defaultCity: "New York",
-        temperatureUnit: "C",
-      },
+      token: data.access_token,
+      user: data.user,
       isAuthenticated: true,
     });
   },
@@ -78,10 +65,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   fetchProfile: async () => {
-    const response = await fetch(`${API_URL}/users/me`);
+    const { token } = get();
+    if (!token) return;
+
+    const response = await fetch(`${API_URL}/users/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     if (response.ok) {
       const user = await response.json();
       set({ user, isAuthenticated: true });
+    } else {
+      // Token expired or invalid
+      set({ user: null, token: null, isAuthenticated: false });
     }
   },
 }));
