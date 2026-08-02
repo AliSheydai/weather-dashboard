@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { WeatherSidebar } from "@/components/weather/WeatherSidebar";
-import {
-  Cloud,
-  Droplets,
-  Wind,
-  Thermometer,
-  Activity,
-  Loader2,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { fetchHealth } from "@/services/api";
+import { CurrentWeather } from "@/components/weather/CurrentWeather";
+import { HourlyForecast } from "@/components/weather/HourlyForecast";
+import { DailyForecast } from "@/components/weather/DailyForecast";
+import { UVIndexCard } from "@/components/weather/UVIndexCard";
+import { SunriseCard } from "@/components/weather/SunriseCard";
+import { VisibilityCard } from "@/components/weather/VisibilityCard";
+import { FeelsLikeCard } from "@/components/weather/FeelsLikeCard";
+import { WindCard } from "@/components/weather/WindCard";
+import { AirQualityCard } from "@/components/weather/AirQualityCard";
+import { HumidityCard } from "@/components/weather/HumidityCard";
+import { RainfallCard } from "@/components/weather/RainfallCard";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -47,271 +50,146 @@ interface DailyData {
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState("New York");
-  const [serverStatus, setServerStatus] = useState<string>("checking...");
+  const [activeTab, setActiveTab] = useState("browse");
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [hourly, setHourly] = useState<HourlyData[]>([]);
   const [daily, setDaily] = useState<DailyData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchWeatherData = async (city: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [weatherRes, hourlyRes, dailyRes] = await Promise.all([
+        fetch(`${API_URL}/weather/current?city=${encodeURIComponent(city)}`),
+        fetch(`${API_URL}/weather/hourly?city=${encodeURIComponent(city)}`),
+        fetch(`${API_URL}/weather/forecast?city=${encodeURIComponent(city)}`),
+      ]);
+
+      if (!weatherRes.ok) {
+        throw new Error("City not found");
+      }
+
+      const weatherData = await weatherRes.json();
+      const hourlyData = await hourlyRes.json();
+      const dailyData = await dailyRes.json();
+
+      setWeather(weatherData);
+      setHourly(hourlyData);
+      setDaily(dailyData);
+      setSelectedCity(weatherData.city || city);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch weather");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchHealth()
-      .then((data) => setServerStatus(data.status))
-      .catch(() => setServerStatus("offline"));
+    fetchWeatherData(selectedCity);
   }, []);
 
-  useEffect(() => {
-    const fetchWeatherData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [weatherRes, hourlyRes, dailyRes] = await Promise.all([
-          fetch(
-            `${API_URL}/weather/current?city=${encodeURIComponent(selectedCity)}`
-          ),
-          fetch(
-            `${API_URL}/weather/hourly?city=${encodeURIComponent(selectedCity)}`
-          ),
-          fetch(
-            `${API_URL}/weather/forecast?city=${encodeURIComponent(selectedCity)}`
-          ),
-        ]);
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    fetchWeatherData(city);
+  };
 
-        if (!weatherRes.ok) {
-          throw new Error("City not found");
-        }
-
-        const weatherData = await weatherRes.json();
-        const hourlyData = await hourlyRes.json();
-        const dailyData = await dailyRes.json();
-
-        setWeather(weatherData);
-        setHourly(hourlyData);
-        setDaily(dailyData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch weather");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWeatherData();
-  }, [selectedCity]);
-
-  const getWeatherIcon = (condition: string) => {
-    switch (condition.toLowerCase()) {
-      case "clear":
-      case "sunny":
-        return "☀️";
-      case "clouds":
-      case "cloudy":
-        return "☁️";
-      case "rain":
-      case "rainy":
-        return "🌧️";
-      case "snow":
-        return "❄️";
-      case "thunderstorm":
-        return "⛈️";
-      default:
-        return "🌤️";
-    }
+  const handleSearch = (city: string) => {
+    fetchWeatherData(city);
   };
 
   return (
     <DashboardLayout
       sidebar={
         <WeatherSidebar
-          onCitySelect={setSelectedCity}
+          onCitySelect={handleCitySelect}
           selectedCity={selectedCity}
+          onSearch={handleSearch}
+          isLoading={isLoading}
+          userName="Ali"
+          userEmail="ali@example.com"
+          onLogout={() => {
+            /* Handle logout */
+          }}
+          onSettings={() => {
+            /* Handle settings */
+          }}
+        />
+      }
+      header={
+        <DashboardHeader
+          city={selectedCity}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
       }
     >
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              HOME • {selectedCity.toUpperCase()}
-            </p>
-            <h2 className="text-3xl font-bold mt-1">
-              {weather?.city || selectedCity}
-            </h2>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Activity className="h-4 w-4" />
-              <span
-                className={
-                  serverStatus === "ok" ? "text-green-500" : "text-yellow-500"
-                }
-              >
-                Server: {serverStatus}
-              </span>
-            </div>
-            <nav className="flex gap-4">
-              <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-                Browse
-              </button>
-              <button className="px-4 py-2 rounded-lg text-muted-foreground hover:bg-secondary text-sm">
-                Map
-              </button>
-              <button className="px-4 py-2 rounded-lg text-muted-foreground hover:bg-secondary text-sm">
-                Metrics
-              </button>
-            </nav>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-indigo-400" />
+            <p className="text-[#94a3b8]">Loading weather data...</p>
           </div>
         </div>
+      )}
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Loading weather data...</span>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <Card className="border-destructive">
-            <CardContent className="p-6 text-center">
-              <p className="text-destructive font-medium">{error}</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Please try another city name
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Weather Content */}
-        {weather && !isLoading && (
-          <>
-            {/* Main Weather Card */}
-            <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-0">
-              <CardContent className="p-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-8xl font-bold">
-                      {weather.temperature}°
-                    </div>
-                    <p className="text-xl text-muted-foreground mt-2 capitalize">
-                      {weather.description}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Feels like {weather.feelsLike}°
-                    </p>
-                  </div>
-                  <div className="text-9xl">
-                    {getWeatherIcon(weather.condition)}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Info Cards Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Thermometer className="h-4 w-4" />
-                    Feels Like
-                  </div>
-                  <div className="text-2xl font-bold">{weather.feelsLike}°</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Droplets className="h-4 w-4" />
-                    Humidity
-                  </div>
-                  <div className="text-2xl font-bold">{weather.humidity}%</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Wind className="h-4 w-4" />
-                    Wind
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {weather.windSpeed} km/h
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Cloud className="h-4 w-4" />
-                    Visibility
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {weather.visibility} km
-                  </div>
-                </CardContent>
-              </Card>
+      {/* Error State */}
+      {error && !isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-4 max-w-md text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+              <AlertCircle className="h-8 w-8 text-red-400" />
             </div>
+            <h3 className="text-lg font-semibold text-white">
+              Unable to load weather
+            </h3>
+            <p className="text-[#94a3b8]">{error}</p>
+            <button
+              onClick={() => fetchWeatherData(selectedCity)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
 
-            {/* Hourly Forecast */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Hourly Forecast</h3>
-                <div className="grid grid-cols-6 gap-4">
-                  {hourly.slice(0, 6).map((hour, i) => (
-                    <div key={i} className="text-center">
-                      <div className="text-sm text-muted-foreground">
-                        {hour.hour}
-                      </div>
-                      <div className="text-2xl my-2">
-                        {getWeatherIcon(hour.condition)}
-                      </div>
-                      <div className="font-medium">{hour.temperature}°</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+      {/* Weather Content */}
+      {weather && !isLoading && !error && (
+        <div className="space-y-6">
+          {/* Current Weather */}
+          <CurrentWeather
+            temperature={weather.temperature}
+            condition={weather.condition}
+            description={weather.description}
+            feelsLike={weather.feelsLike}
+          />
 
-            {/* Weekly Forecast */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Weekly Forecast</h3>
-                <div className="space-y-3">
-                  {daily.map((day, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                    >
-                      <div className="w-16 font-medium">{day.day}</div>
-                      <div className="w-8 text-center">
-                        {getWeatherIcon(day.condition)}
-                      </div>
-                      <div className="w-12 text-right text-sm text-muted-foreground">
-                        {day.minTemp}°
-                      </div>
-                      <div className="flex-1 mx-4 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-400 to-orange-400 rounded-full"
-                          style={{
-                            marginLeft: `${((day.minTemp - 10) / 30) * 100}%`,
-                            width: `${((day.maxTemp - day.minTemp) / 30) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="w-12 text-right font-medium">
-                        {day.maxTemp}°
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+          {/* Hourly Forecast */}
+          <HourlyForecast data={hourly} />
+
+          {/* Statistics Cards Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <UVIndexCard value={3} status="Moderate" />
+            <SunriseCard sunrise={weather.sunrise} sunset={weather.sunset} />
+            <WindCard speed={weather.windSpeed} direction="NW" />
+            <HumidityCard value={weather.humidity} />
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <FeelsLikeCard value={weather.feelsLike} actual={weather.temperature} />
+            <VisibilityCard value={weather.visibility} />
+            <AirQualityCard aqi={56} status="Moderate" />
+            <RainfallCard value={0} />
+          </div>
+
+          {/* Daily Forecast */}
+          <DailyForecast data={daily} />
+        </div>
+      )}
     </DashboardLayout>
   );
 }
