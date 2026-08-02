@@ -17,8 +17,7 @@ import { RainfallCard } from "@/components/weather/RainfallCard";
 import { useWeather } from "@/hooks/useWeather";
 import { useAuthStore } from "@/stores/authStore";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useFavoritesStore } from "@/stores/favoritesStore";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw, Star } from "lucide-react";
 import { useState } from "react";
 
 export default function Home() {
@@ -31,18 +30,19 @@ export default function Home() {
     daily,
     isLoading,
     error,
+    favorites,
     searchCity,
     selectCity,
+    toggleFavorite,
+    isFavorite,
     retry,
   } = useWeather();
 
   const { user, isAuthenticated, logout } = useAuthStore();
   const { history, clearHistory } = useHistoryStore();
-  const { favorites, removeFavorite } = useFavoritesStore();
-
   const token = useAuthStore((state) => state.token);
 
-  // Convert favorites to CityData format
+  // Convert favorites to CityData format for sidebar
   const favoriteCities = favorites.map((fav) => ({
     name: fav.city,
     temperature: 0,
@@ -58,13 +58,10 @@ export default function Home() {
     }
   };
 
-  const handleToggleFavorite = (city: string) => {
-    // Toggle favorite logic
-  };
-
-  const handleRemoveFavorite = (id: string) => {
-    if (token) {
-      removeFavorite(token, id);
+  const handleRemoveFavorite = (cityName: string) => {
+    const fav = favorites.find((f) => f.city === cityName);
+    if (fav && token) {
+      toggleFavorite(cityName);
     }
   };
 
@@ -78,7 +75,7 @@ export default function Home() {
           isLoading={isLoading}
           favoriteCities={favoriteCities}
           searchHistory={history}
-          onToggleFavorite={handleToggleFavorite}
+          onToggleFavorite={toggleFavorite}
           onRemoveFavorite={handleRemoveFavorite}
           onClearHistory={handleClearHistory}
           userName={user?.name || "Guest"}
@@ -131,13 +128,35 @@ export default function Home() {
       {/* Weather Content */}
       {weather && !isLoading && !error && (
         <div className="space-y-6 animate-fade-in">
-          {/* Current Weather */}
-          <CurrentWeather
-            temperature={weather.temperature}
-            condition={weather.condition}
-            description={weather.description}
-            feelsLike={weather.feelsLike}
-          />
+          {/* Current Weather with Favorite Button */}
+          <div className="relative">
+            <CurrentWeather
+              temperature={weather.temperature}
+              condition={weather.condition}
+              description={weather.description}
+              feelsLike={weather.feelsLike}
+            />
+            {/* Favorite Button */}
+            {isAuthenticated && (
+              <button
+                onClick={() => toggleFavorite(weather.city)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm"
+                title={
+                  isFavorite(weather.city)
+                    ? "Remove from favorites"
+                    : "Add to favorites"
+                }
+              >
+                <Star
+                  className={`h-5 w-5 ${
+                    isFavorite(weather.city)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-white"
+                  }`}
+                />
+              </button>
+            )}
+          </div>
 
           {/* Hourly Forecast */}
           <HourlyForecast data={hourly} />

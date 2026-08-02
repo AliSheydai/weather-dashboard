@@ -46,7 +46,8 @@ export function useWeather() {
 
   const { token, isAuthenticated } = useAuthStore();
   const { fetchHistory } = useHistoryStore();
-  const { fetchFavorites } = useFavoritesStore();
+  const { favorites, fetchFavorites, addFavorite, removeFavorite } =
+    useFavoritesStore();
 
   const fetchWeatherData = useCallback(
     async (city: string) => {
@@ -114,6 +115,27 @@ export function useWeather() {
     [fetchWeatherData]
   );
 
+  const toggleFavorite = useCallback(
+    async (city: string) => {
+      if (!token || !isAuthenticated) return;
+
+      const existingFavorite = favorites.find((f) => f.city === city);
+      if (existingFavorite) {
+        await removeFavorite(token, existingFavorite.id);
+      } else {
+        await addFavorite(token, city);
+      }
+    },
+    [token, isAuthenticated, favorites, addFavorite, removeFavorite]
+  );
+
+  const isFavorite = useCallback(
+    (city: string) => {
+      return favorites.some((f) => f.city === city);
+    },
+    [favorites]
+  );
+
   // Initial fetch
   useEffect(() => {
     fetchWeatherData(selectedCity);
@@ -134,8 +156,11 @@ export function useWeather() {
     daily,
     isLoading,
     error,
+    favorites,
     searchCity,
     selectCity,
+    toggleFavorite,
+    isFavorite,
     retry: () => fetchWeatherData(selectedCity),
   };
 }
