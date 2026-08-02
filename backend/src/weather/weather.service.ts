@@ -12,10 +12,11 @@ export class WeatherService {
     private configService: ConfigService,
     private httpService: HttpService,
   ) {
-    this.apiKey = this.configService.get<string>(
-      'WEATHER_API_KEY',
-      '371ec30872dff9e2936e074606552d16',
-    );
+    const apiKey = this.configService.get<string>('WEATHER_API_KEY');
+    if (!apiKey) {
+      throw new Error('WEATHER_API_KEY environment variable is required');
+    }
+    this.apiKey = apiKey;
     this.baseUrl = this.configService.get<string>(
       'WEATHER_API_BASE_URL',
       'https://api.openweathermap.org/data/2.5',

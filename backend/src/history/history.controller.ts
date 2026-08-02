@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Delete, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Request, UseGuards, ValidationPipe } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { HistoryService } from './history.service';
+import { AddHistoryDto } from './dto/history.dto';
 
 @Controller('history')
 @UseGuards(JwtAuthGuard)
@@ -13,8 +14,8 @@ export class HistoryController {
   }
 
   @Post()
-  async addToHistory(@Request() req, @Body('city') city: string) {
-    return this.historyService.addToHistory(req.user.id, city);
+  async addToHistory(@Request() req, @Body(ValidationPipe) dto: AddHistoryDto) {
+    return this.historyService.addToHistory(req.user.id, dto.city);
   }
 
   @Delete()
