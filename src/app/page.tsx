@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { WeatherSidebar } from "@/components/weather/WeatherSidebar";
@@ -15,106 +14,78 @@ import { WindCard } from "@/components/weather/WindCard";
 import { AirQualityCard } from "@/components/weather/AirQualityCard";
 import { HumidityCard } from "@/components/weather/HumidityCard";
 import { RainfallCard } from "@/components/weather/RainfallCard";
+import { useWeather } from "@/hooks/useWeather";
+import { useAuthStore } from "@/stores/authStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-interface WeatherData {
-  city: string;
-  temperature: number;
-  condition: string;
-  description: string;
-  humidity: number;
-  windSpeed: number;
-  feelsLike: number;
-  visibility: number;
-  icon: string;
-  sunrise: string;
-  sunset: string;
-}
-
-interface HourlyData {
-  hour: string;
-  temperature: number;
-  condition: string;
-  icon: string;
-}
-
-interface DailyData {
-  day: string;
-  minTemp: number;
-  maxTemp: number;
-  condition: string;
-  icon: string;
-}
+import { useState } from "react";
 
 export default function Home() {
-  const [selectedCity, setSelectedCity] = useState("New York");
   const [activeTab, setActiveTab] = useState("browse");
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [hourly, setHourly] = useState<HourlyData[]>([]);
-  const [daily, setDaily] = useState<DailyData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchWeatherData = async (city: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [weatherRes, hourlyRes, dailyRes] = await Promise.all([
-        fetch(`${API_URL}/weather/current?city=${encodeURIComponent(city)}`),
-        fetch(`${API_URL}/weather/hourly?city=${encodeURIComponent(city)}`),
-        fetch(`${API_URL}/weather/forecast?city=${encodeURIComponent(city)}`),
-      ]);
+  const {
+    selectedCity,
+    weather,
+    hourly,
+    daily,
+    isLoading,
+    error,
+    searchCity,
+    selectCity,
+    retry,
+  } = useWeather();
 
-      if (!weatherRes.ok) {
-        throw new Error("City not found");
-      }
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const { history, clearHistory } = useHistoryStore();
+  const { favorites, removeFavorite } = useFavoritesStore();
 
-      const weatherData = await weatherRes.json();
-      const hourlyData = await hourlyRes.json();
-      const dailyData = await dailyRes.json();
+  const token = useAuthStore((state) => state.token);
 
-      setWeather(weatherData);
-      setHourly(hourlyData);
-      setDaily(dailyData);
-      setSelectedCity(weatherData.city || city);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch weather");
-    } finally {
-      setIsLoading(false);
+  // Convert favorites to CityData format
+  const favoriteCities = favorites.map((fav) => ({
+    name: fav.city,
+    temperature: 0,
+    condition: "Unknown",
+    high: 0,
+    low: 0,
+    isFavorite: true,
+  }));
+
+  const handleClearHistory = () => {
+    if (token) {
+      clearHistory(token);
     }
   };
 
-  useEffect(() => {
-    fetchWeatherData(selectedCity);
-  }, []);
-
-  const handleCitySelect = (city: string) => {
-    setSelectedCity(city);
-    fetchWeatherData(city);
+  const handleToggleFavorite = (city: string) => {
+    // Toggle favorite logic
   };
 
-  const handleSearch = (city: string) => {
-    fetchWeatherData(city);
+  const handleRemoveFavorite = (id: string) => {
+    if (token) {
+      removeFavorite(token, id);
+    }
   };
 
   return (
     <DashboardLayout
       sidebar={
         <WeatherSidebar
-          onCitySelect={handleCitySelect}
+          onCitySelect={selectCity}
           selectedCity={selectedCity}
-          onSearch={handleSearch}
+          onSearch={searchCity}
           isLoading={isLoading}
-          userName="Ali"
-          userEmail="ali@example.com"
-          onLogout={() => {
-            /* Handle logout */
-          }}
-          onSettings={() => {
-            /* Handle settings */
-          }}
+          favoriteCities={favoriteCities}
+          searchHistory={history}
+          onToggleFavorite={handleToggleFavorite}
+          onRemoveFavorite={handleRemoveFavorite}
+          onClearHistory={handleClearHistory}
+          userName={user?.name || "Guest"}
+          userEmail={user?.email || "guest@example.com"}
+          userAvatar={user?.avatar}
+          onLogout={logout}
+          onSettings={() => {}}
         />
       }
       header={
@@ -147,7 +118,7 @@ export default function Home() {
             </h3>
             <p className="text-[#94a3b8]">{error}</p>
             <button
-              onClick={() => fetchWeatherData(selectedCity)}
+              onClick={retry}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
             >
               <RefreshCw className="h-4 w-4" />
@@ -159,7 +130,7 @@ export default function Home() {
 
       {/* Weather Content */}
       {weather && !isLoading && !error && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           {/* Current Weather */}
           <CurrentWeather
             temperature={weather.temperature}
@@ -180,7 +151,10 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <FeelsLikeCard value={weather.feelsLike} actual={weather.temperature} />
+            <FeelsLikeCard
+              value={weather.feelsLike}
+              actual={weather.temperature}
+            />
             <VisibilityCard value={weather.visibility} />
             <AirQualityCard aqi={56} status="Moderate" />
             <RainfallCard value={0} />
