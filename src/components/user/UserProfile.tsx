@@ -1,7 +1,7 @@
 "use client";
 
 import { User, LogOut, Settings, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface UserProfileProps {
   name: string;
@@ -19,6 +19,22 @@ export function UserProfile({
   onSettings,
 }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   const initials = name
     .split(" ")
@@ -28,7 +44,7 @@ export function UserProfile({
     .slice(0, 2);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-colors"

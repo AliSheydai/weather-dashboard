@@ -18,7 +18,7 @@ import { useWeather } from "@/hooks/useWeather";
 import { useAuthStore } from "@/stores/authStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { Loader2, AlertCircle, RefreshCw, Star } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("browse");
@@ -38,9 +38,13 @@ export default function Home() {
     retry,
   } = useWeather();
 
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, initialize } = useAuthStore();
   const { history, clearHistory } = useHistoryStore();
   const token = useAuthStore((state) => state.token);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   // Convert favorites to CityData format for sidebar
   const favoriteCities = favorites.map((fav) => ({
@@ -78,6 +82,7 @@ export default function Home() {
           onToggleFavorite={toggleFavorite}
           onRemoveFavorite={handleRemoveFavorite}
           onClearHistory={handleClearHistory}
+          isAuthenticated={isAuthenticated}
           userName={user?.name || "Guest"}
           userEmail={user?.email || "guest@example.com"}
           userAvatar={user?.avatar}

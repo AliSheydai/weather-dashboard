@@ -5,10 +5,12 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
+  initialize: () => Promise<void>;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -17,6 +19,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isAuthenticated: false,
+  isLoading: true,
+
+  initialize: async () => {
+    if (typeof window === "undefined") return;
+    const storedToken = localStorage.getItem("auth_token");
+    if (storedToken) {
+      set({ token: storedToken });
+      await get().fetchProfile();
+    }
+    set({ isLoading: false });
+  },
 
   login: async (email: string, password: string) => {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -26,10 +39,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     if (!response.ok) {
-      throw new Error("Login failed");
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || "Invalid email or password");
     }
 
     const data = await response.json();
+    localStorage.setItem("auth_token", data.access_token);
     set({
       token: data.access_token,
       user: data.user,
@@ -45,10 +60,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     if (!response.ok) {
-      throw new Error("Registration failed");
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || "Registration failed");
     }
 
     const data = await response.json();
+    localStorage.setItem("auth_token", data.access_token);
     set({
       token: data.access_token,
       user: data.user,
@@ -57,6 +74,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    localStorage.removeItem("auth_token");
     set({
       user: null,
       token: null,
@@ -66,20 +84,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchProfile: async () => {
     const { token } = get();
-    if (!token) return;
+    if (!token) {
+      set({ isLoading: false });
+      return;
+    }
 
-    const response = await fetch(`${API_URL}/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      const response = await fetch(`${API_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    if (response.ok) {
-      const user = await response.json();
-      set({ user, isAuthenticated: true });
-    } else {
-      // Token expired or invalid
-      set({ user: null, token: null, isAuthenticated: false });
+      if (response.ok) {
+        const user = await response.json();
+        set({ user, isAuthenticated: true, isLoading: false });
+      } else {
+        localStorage.removeItem("auth_token");
+        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+      }
+    } catch {
+      set({ isLoading: false });
     }
   },
 }));

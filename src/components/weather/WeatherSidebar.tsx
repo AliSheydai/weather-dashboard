@@ -3,7 +3,8 @@
 import { SearchCity } from "./SearchCity";
 import { CityList } from "./CityList";
 import { UserProfile } from "../user/UserProfile";
-import { MapPin, Star, Clock, Trash2 } from "lucide-react";
+import { MapPin, Star, Clock, Trash2, LogIn } from "lucide-react";
+import Link from "next/link";
 
 interface CityData {
   name: string;
@@ -31,6 +32,7 @@ interface WeatherSidebarProps {
   onToggleFavorite?: (city: string) => void;
   onRemoveFavorite?: (city: string) => void;
   onClearHistory?: () => void;
+  isAuthenticated?: boolean;
   userName?: string;
   userEmail?: string;
   userAvatar?: string | null;
@@ -49,6 +51,7 @@ export function WeatherSidebar({
   onToggleFavorite,
   onRemoveFavorite,
   onClearHistory,
+  isAuthenticated = false,
   userName = "User",
   userEmail = "user@example.com",
   userAvatar,
@@ -177,15 +180,32 @@ export function WeatherSidebar({
         />
       </div>
 
-      {/* User Profile */}
+      {/* User Profile or Sign In */}
       <div className="p-3 border-t border-white/[0.08]">
-        <UserProfile
-          name={userName}
-          email={userEmail}
-          avatar={userAvatar}
-          onLogout={onLogout}
-          onSettings={onSettings}
-        />
+        {isAuthenticated ? (
+          <UserProfile
+            name={userName}
+            email={userEmail}
+            avatar={userAvatar}
+            onLogout={onLogout}
+            onSettings={onSettings}
+          />
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+              <LogIn className="h-4 w-4 text-indigo-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Sign In</p>
+              <p className="text-[10px] text-[#64748b]">
+                Access favorites & history
+              </p>
+            </div>
+          </Link>
+        )}
       </div>
     </div>
   );
