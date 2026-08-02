@@ -57,6 +57,10 @@ export const useWeatherStore = create<WeatherState>((set) => ({
   fetchAllWeather: async (city: string, token?: string) => {
     set({ isLoading: true, error: null });
     try {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        throw new Error("You are offline. Please check your internet connection.");
+      }
+
       const headers: Record<string, string> = {};
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -69,7 +73,16 @@ export const useWeatherStore = create<WeatherState>((set) => ({
       ]);
 
       if (!weatherRes.ok) {
-        throw new Error("City not found");
+        if (weatherRes.status === 404) {
+          throw new Error(`City "${city}" not found. Please check the city name.`);
+        }
+        if (weatherRes.status === 429) {
+          throw new Error("Too many requests. Please wait a moment and try again.");
+        }
+        if (weatherRes.status >= 500) {
+          throw new Error("Server is temporarily unavailable. Please try again later.");
+        }
+        throw new Error("Failed to fetch weather data. Please try again.");
       }
 
       const current = await weatherRes.json();
@@ -84,10 +97,17 @@ export const useWeatherStore = create<WeatherState>((set) => ({
         isLoading: false,
       });
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : "Failed to fetch weather",
-        isLoading: false,
-      });
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        set({
+          error: "Unable to connect to the server. Please check if the backend is running.",
+          isLoading: false,
+        });
+      } else {
+        set({
+          error: error instanceof Error ? error.message : "Failed to fetch weather",
+          isLoading: false,
+        });
+      }
     }
   },
 }));
