@@ -16,6 +16,8 @@ import {
 import { MetricCard } from "./MetricCard";
 import { MetricDetailDialog } from "./MetricDetailDialog";
 import { UVIndexModal } from "./UVIndexModal";
+import { SunriseSunsetModal } from "./SunriseSunsetModal";
+import { WindModal } from "./WindModal";
 
 interface MetricsGridProps {
   uvIndex: number;
@@ -212,40 +214,9 @@ export function MetricsGrid({
         open={openDialog === "sunrise"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Sunrise & Sunset"
-        description="Today's sun schedule and daylight duration."
+        description="Today's sun schedule and daylight duration"
       >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Sunrise className="h-8 w-8 text-amber-400" />
-              <div>
-                <p className="text-xs text-white/40">Sunrise</p>
-                <p className="text-3xl font-light text-white">{sunrise}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Sunset className="h-8 w-8 text-purple-400" />
-              <div>
-                <p className="text-xs text-white/40">Sunset</p>
-                <p className="text-3xl font-light text-white">{sunset}</p>
-              </div>
-            </div>
-          </div>
-          <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/30 via-yellow-500/10 to-purple-500/30" />
-            <div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full"
-              style={{ width: "60%" }}
-            />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg"
-              style={{ left: "60%" }}
-            />
-          </div>
-          <p className="text-xs text-white/30 text-center">
-            Approx. 14 hours of daylight
-          </p>
-        </div>
+        <SunriseSunsetModal sunrise={sunrise} sunset={sunset} />
       </MetricDetailDialog>
 
       <MetricDetailDialog
@@ -369,47 +340,9 @@ export function MetricsGrid({
         open={openDialog === "wind"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Wind"
-        description="Wind speed and direction details."
+        description="Wind speed, direction, and gust analysis"
       >
-        <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="text-5xl font-light text-white">{windSpeed}</div>
-            <span className="text-white/30 mb-2">km/h</span>
-          </div>
-          <p className="text-white/60">Direction: {windDirection}</p>
-          <div className="flex items-center justify-center">
-            <div className="relative w-24 h-24">
-              <div className="absolute inset-0 rounded-full border border-white/10" />
-              <div className="absolute inset-2 rounded-full border border-white/[0.06]" />
-              {["N", "E", "S", "W"].map((dir, i) => (
-                <span
-                  key={dir}
-                  className="absolute text-[10px] text-white/30"
-                  style={{
-                    top: i === 0 ? "0" : i === 2 ? "auto" : "50%",
-                    bottom: i === 2 ? "0" : "auto",
-                    left: i === 3 ? "0" : i === 1 ? "auto" : "50%",
-                    right: i === 1 ? "0" : "auto",
-                    transform:
-                      i % 2 === 0 ? "translateX(-50%)" : "translateY(-50%)",
-                  }}
-                >
-                  {dir}
-                </span>
-              ))}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[14px] border-b-indigo-400 transition-transform"
-                  style={{
-                    transform: `rotate(${
-                      { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 }[windDirection] || 0
-                    }deg)`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <WindModal windSpeed={windSpeed} windDirection={windDirection} />
       </MetricDetailDialog>
 
       <MetricDetailDialog

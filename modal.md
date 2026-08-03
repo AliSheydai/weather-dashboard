@@ -229,7 +229,7 @@ Example: "Most rainfall is expected between 14:00 and 17:00."
 
 ---
 
-# 9. AVERAGE TEMPERATURE(this case is not exist can you get with api?)
+# 9. AVERAGE TEMPERATURE
 
 ### Primary Chart
 
