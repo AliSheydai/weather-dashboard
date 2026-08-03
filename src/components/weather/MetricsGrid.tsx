@@ -18,6 +18,8 @@ import { MetricDetailDialog } from "./MetricDetailDialog";
 import { UVIndexModal } from "./UVIndexModal";
 import { SunriseSunsetModal } from "./SunriseSunsetModal";
 import { WindModal } from "./WindModal";
+import { HumidityModal } from "./HumidityModal";
+import { FeelsLikeModal } from "./FeelsLikeModal";
 
 interface MetricsGridProps {
   uvIndex: number;
@@ -384,28 +386,9 @@ export function MetricsGrid({
         open={openDialog === "humidity"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Humidity"
-        description="Current atmospheric humidity levels."
+        description="Atmospheric moisture levels and comfort analysis"
       >
-        <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="text-5xl font-light text-white">{humidity}</div>
-            <span className="text-white/30 mb-2">%</span>
-          </div>
-          <p className="text-white/60">{humidityStatus}</p>
-          <div className="h-3 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
-              style={{ width: `${humidity}%` }}
-            />
-          </div>
-          <p className="text-xs text-white/30">
-            {humidity < 30
-              ? "Very dry air. Consider using a humidifier."
-              : humidity < 60
-              ? "Comfortable humidity levels for most activities."
-              : "High humidity may cause discomfort."}
-          </p>
-        </div>
+        <HumidityModal humidity={humidity} />
       </MetricDetailDialog>
     </>
   );
