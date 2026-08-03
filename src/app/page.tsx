@@ -183,6 +183,7 @@ export default function Home() {
                 aqi={dayAqi}
                 aqiStatus={dayAqiStatus}
                 humidity={dayHumidity}
+                daily={daily}
               />
             </div>
           </div>

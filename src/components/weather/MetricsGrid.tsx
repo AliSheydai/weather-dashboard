@@ -20,6 +20,16 @@ import { SunriseSunsetModal } from "./SunriseSunsetModal";
 import { WindModal } from "./WindModal";
 import { HumidityModal } from "./HumidityModal";
 import { FeelsLikeModal } from "./FeelsLikeModal";
+import { VisibilityModal } from "./VisibilityModal";
+import { AirQualityModal } from "./AirQualityModal";
+import { RainfallModal } from "./RainfallModal";
+import { AvgTemperatureModal } from "./AvgTemperatureModal";
+
+interface DailyData {
+  day: string;
+  minTemp: number;
+  maxTemp: number;
+}
 
 interface MetricsGridProps {
   uvIndex: number;
@@ -35,6 +45,7 @@ interface MetricsGridProps {
   aqi: number;
   aqiStatus: string;
   humidity: number;
+  daily?: DailyData[];
 }
 
 export function MetricsGrid({
@@ -51,6 +62,7 @@ export function MetricsGrid({
   aqi,
   aqiStatus,
   humidity,
+  daily,
 }: MetricsGridProps) {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
 
@@ -225,117 +237,40 @@ export function MetricsGrid({
         open={openDialog === "visibility"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Visibility"
-        description="Current atmospheric visibility conditions."
+        description="Atmospheric visibility and fog risk analysis"
       >
-        <div className="space-y-4">
-          <div className="text-5xl font-light text-white">{visibility} km</div>
-          <p className="text-white/60">{visibilityStatus}</p>
-          <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-slate-500 to-blue-400 rounded-full"
-              style={{ width: `${Math.min((visibility / 20) * 100, 100)}%` }}
-            />
-          </div>
-          <p className="text-xs text-white/30">
-            {visibility >= 10
-              ? "Crystal clear conditions. Perfect for outdoor activities."
-              : visibility >= 5
-              ? "Good visibility. Minor atmospheric haze possible."
-              : "Reduced visibility. Exercise caution when driving."}
-          </p>
-        </div>
+        <VisibilityModal visibility={visibility} />
       </MetricDetailDialog>
 
       <MetricDetailDialog
         open={openDialog === "feelslike"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Feels Like"
-        description="How the temperature actually feels to the human body."
+        description="Perceived temperature and driving factors"
       >
-        <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="text-5xl font-light text-white">{feelsLike}°</div>
-            <span className="text-white/30 mb-2">C</span>
-          </div>
-          <p className="text-white/60">{feelsLikeStatus}</p>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 text-center p-3 rounded-xl bg-white/[0.04]">
-              <p className="text-xs text-white/30 mb-1">Actual</p>
-              <p className="text-xl font-light text-white">{actualTemp}°</p>
-            </div>
-            <div className="flex-1 text-center p-3 rounded-xl bg-white/[0.04]">
-              <p className="text-xs text-white/30 mb-1">Feels Like</p>
-              <p className="text-xl font-light text-white">{feelsLike}°</p>
-            </div>
-          </div>
-          <p className="text-xs text-white/30">
-            Wind, humidity, and other factors affect how temperature feels.
-          </p>
-        </div>
+        <FeelsLikeModal feelsLike={feelsLike} actualTemp={actualTemp} />
       </MetricDetailDialog>
 
       <MetricDetailDialog
         open={openDialog === "avgtemp"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Average Temperature"
-        description="Daily average temperature and range analysis."
+        description="Daily averages and seasonal deviation analysis"
       >
-        <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="text-5xl font-light text-white">
-              {Math.round((feelsLike + actualTemp) / 2)}°
-            </div>
-            <span className="text-white/30 mb-2">C</span>
-          </div>
-          <p className="text-white/60">Average of actual and feels-like temperatures</p>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 text-center p-3 rounded-xl bg-white/[0.04]">
-              <p className="text-xs text-white/30 mb-1">Low</p>
-              <p className="text-xl font-light text-white">{actualTemp - 3}°</p>
-            </div>
-            <div className="flex-1 text-center p-3 rounded-xl bg-white/[0.04]">
-              <p className="text-xs text-white/30 mb-1">Average</p>
-              <p className="text-xl font-light text-white">{Math.round((feelsLike + actualTemp) / 2)}°</p>
-            </div>
-            <div className="flex-1 text-center p-3 rounded-xl bg-white/[0.04]">
-              <p className="text-xs text-white/30 mb-1">High</p>
-              <p className="text-xl font-light text-white">{actualTemp + 3}°</p>
-            </div>
-          </div>
-          <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-orange-500 rounded-full"
-              style={{ width: "65%" }}
-            />
-          </div>
-        </div>
+        <AvgTemperatureModal
+          actualTemp={actualTemp}
+          feelsLike={feelsLike}
+          daily={daily}
+        />
       </MetricDetailDialog>
 
       <MetricDetailDialog
         open={openDialog === "rainfall"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Rainfall"
-        description="Precipitation data and forecast."
+        description="Precipitation forecast and weekly accumulation"
       >
-        <div className="space-y-4">
-          <div className="text-5xl font-light text-white">{rainfall} mm</div>
-          <p className="text-white/60">
-            {rainfall === 0 ? "No rainfall expected" : "in the last 24 hours"}
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {["6h", "12h", "18h", "24h"].map((period) => (
-              <div
-                key={period}
-                className="text-center p-2 rounded-xl bg-white/[0.04]"
-              >
-                <p className="text-[10px] text-white/30 mb-1">{period}</p>
-                <p className="text-sm text-white/60">
-                  {Math.round(rainfall * Math.random())} mm
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <RainfallModal rainfall={rainfall} />
       </MetricDetailDialog>
 
       <MetricDetailDialog
@@ -351,35 +286,9 @@ export function MetricsGrid({
         open={openDialog === "aqi"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
         title="Air Quality"
-        description="Current air quality index and health recommendations."
+        description="AQI index and pollutant health analysis"
       >
-        <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="text-5xl font-light text-white">{aqi}</div>
-            <span className="text-white/30 mb-2">AQI</span>
-          </div>
-          <p className="text-white/60">{aqiStatus}</p>
-          <div className="h-3 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500 rounded-full"
-              style={{ width: `${aqiPct}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-5 gap-2 text-center">
-            {["Good", "Moderate", "Unhealthy SG", "Unhealthy", "Very Unhealthy"].map(
-              (label, i) => (
-                <div key={label} className="text-[10px] text-white/30">
-                  <div
-                    className={`h-1.5 rounded-full mb-1 ${
-                      ["bg-green-500", "bg-yellow-500", "bg-orange-500", "bg-red-500", "bg-purple-500"][i]
-                    } ${aqi <= (i + 1) * 50 ? "opacity-100" : "opacity-20"}`}
-                  />
-                  {label}
-                </div>
-              )
-            )}
-          </div>
-        </div>
+        <AirQualityModal aqi={aqi} aqiStatus={aqiStatus} />
       </MetricDetailDialog>
 
       <MetricDetailDialog
