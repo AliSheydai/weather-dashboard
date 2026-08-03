@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { MetricCard } from "./MetricCard";
 import { MetricDetailDialog } from "./MetricDetailDialog";
+import { UVIndexModal } from "./UVIndexModal";
 
 interface MetricsGridProps {
   uvIndex: number;
@@ -201,44 +202,10 @@ export function MetricsGrid({
       <MetricDetailDialog
         open={openDialog === "uv"}
         onOpenChange={(o) => !o && setOpenDialog(null)}
-        title="UV Index Details"
-        description="Understanding UV radiation levels and protection recommendations."
+        title="UV Index"
+        description="UV radiation levels and sun protection guidance"
       >
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="text-5xl font-light text-white">{uvIndex}</div>
-            <div>
-              <p className="text-white/80 font-medium">{uvStatus}</p>
-              <p className="text-xs text-white/40 mt-1">
-                {uvIndex <= 2
-                  ? "Low exposure. No protection needed."
-                  : uvIndex <= 5
-                  ? "Moderate exposure. Wear sunscreen."
-                  : uvIndex <= 7
-                  ? "High exposure. Reduce time in the sun."
-                  : "Very high exposure. Avoid midday sun."}
-              </p>
-            </div>
-          </div>
-          <div className="h-3 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500 rounded-full transition-all"
-              style={{ width: `${uvPct}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-5 gap-2 text-center">
-            {["Low", "Moderate", "High", "Very High", "Extreme"].map((label, i) => (
-              <div key={label} className="text-[10px] text-white/30">
-                <div
-                  className={`h-1.5 rounded-full mb-1 ${
-                    ["bg-green-500", "bg-yellow-500", "bg-orange-500", "bg-red-500", "bg-purple-500"][i]
-                  } ${i <= Math.floor(uvIndex / 3) ? "opacity-100" : "opacity-20"}`}
-                />
-                {label}
-              </div>
-            ))}
-          </div>
-        </div>
+        <UVIndexModal uvIndex={uvIndex} uvStatus={uvStatus} />
       </MetricDetailDialog>
 
       <MetricDetailDialog
