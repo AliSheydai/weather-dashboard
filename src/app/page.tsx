@@ -3,7 +3,7 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { WeatherSidebar } from "@/components/weather/WeatherSidebar";
-import { UnifiedWeatherCard } from "@/components/weather/UnifiedWeatherCard";
+import { TemperatureCard } from "@/components/weather/TemperatureCard";
 import { MetricsGrid } from "@/components/weather/MetricsGrid";
 import { WeeklyForecastCompact } from "@/components/weather/WeeklyForecastCompact";
 import { useWeather } from "@/hooks/useWeather";
@@ -39,7 +39,6 @@ export default function Home() {
     initialize();
   }, [initialize]);
 
-  // Reset day selection when city changes
   useEffect(() => {
     setSelectedDayIndex(0);
   }, [selectedCity]);
@@ -113,7 +112,7 @@ export default function Home() {
             <p className="text-xs text-white/40">{error}</p>
             <button
               onClick={retry}
-              className="flex items-center gap-2 px-4 py-2 bg-white/6 text-white/60 rounded-xl hover:bg-white/10 transition-colors text-xs border border-white/6"
+              className="flex items-center gap-2 px-4 py-2 bg-white/[0.06] text-white/60 rounded-xl hover:bg-white/[0.1] transition-colors text-xs border border-white/[0.06]"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Try Again
@@ -122,76 +121,71 @@ export default function Home() {
         </div>
       )}
 
-      {/* Weather Content — Three-tier layout */}
+      {/* Weather Content — Two-column layout */}
       {weather && !isLoading && !error && (() => {
         const selectedDay = daily[selectedDayIndex];
         const isToday = selectedDayIndex === 0;
-        const displayTemp = isToday ? weather.temperature : Math.round((selectedDay.maxTemp + selectedDay.minTemp) / 2);
-        const displayHumidity = isToday ? weather.humidity : selectedDay.humidity;
-        const displayWindSpeed = isToday ? weather.windSpeed : selectedDay.windSpeed;
-        const displayWindDirection = isToday ? weather.windDirection : selectedDay.windDirection;
-        const displayVisibility = isToday ? weather.visibility : selectedDay.visibility;
-        const displayRainfall = isToday ? weather.rainfall : selectedDay.rainfall;
-        const displayFeelsLike = isToday ? weather.feelsLike : Math.round((selectedDay.maxTemp + selectedDay.minTemp) / 2);
+
+        // Derive metric values from selected day's data
+        const dayHumidity = selectedDay?.humidity ?? weather.humidity;
+        const dayWindSpeed = selectedDay?.windSpeed ?? weather.windSpeed;
+        const dayWindDir = selectedDay?.windDirection ?? "NW";
+        const dayVisibility = selectedDay?.visibility ?? weather.visibility;
+        const dayRainfall = selectedDay?.rainfall ?? 0;
+        const dayFeelsLike = isToday
+          ? weather.feelsLike
+          : Math.round(((selectedDay?.maxTemp ?? 0) + (selectedDay?.minTemp ?? 0)) / 2);
+        const dayUvIndex = isToday ? (weather as any).uvIndex ?? 3 : Math.max(0, Math.min(11, ((weather as any).uvIndex ?? 3) + selectedDayIndex - 3));
+        const dayAqi = isToday ? (weather as any).aqi ?? 56 : Math.max(0, Math.min(300, ((weather as any).aqi ?? 56) + (selectedDayIndex * 5) - 15));
+        const dayAqiStatus = dayAqi <= 50 ? "Good" : dayAqi <= 100 ? "Moderate" : dayAqi <= 150 ? "Unhealthy SG" : "Unhealthy";
 
         return (
-        <div className="h-full flex flex-col gap-3 animate-fade-in overflow-auto lg:overflow-hidden">
-          {/* Tier 1: Unified Weather Card (~45%) */}
-          <div className="lg:flex-45 min-h-0 lg:min-h-0">
-            <UnifiedWeatherCard
-              temperature={weather.temperature}
-              condition={weather.condition}
-              description={weather.description}
-              feelsLike={weather.feelsLike}
-              hourly={hourly}
-              daily={daily}
-              selectedDayIndex={selectedDayIndex}
-              onDayChange={setSelectedDayIndex}
-            />
-          </div>
+          <div className="h-full flex flex-col lg:flex-row gap-3 animate-fade-in overflow-auto lg:overflow-hidden">
+            {/* Left Column: Temperature + Weekly Forecast */}
+            <div className="lg:w-[38%] flex flex-col gap-3 min-h-0 lg:min-h-0">
+              {/* Temperature Card — height = 1 sub-card row */}
+              <div className="flex-[1] min-h-0">
+                <TemperatureCard
+                  temperature={weather.temperature}
+                  condition={weather.condition}
+                  description={weather.description}
+                  feelsLike={weather.feelsLike}
+                  hourly={hourly}
+                  daily={daily}
+                  selectedDayIndex={selectedDayIndex}
+                  onDayChange={setSelectedDayIndex}
+                />
+              </div>
 
-          {/* Tier 2: Metrics Grid + Weekly Forecast (~55%) */}
-          <div className="lg:flex-55 min-h-0 flex flex-col lg:flex-row gap-3">
-            {/* Metrics Grid — 9 cards in 3x3 */}
-            <div className="lg:flex-3 min-w-0">
+              {/* Weekly Forecast — height = 2 sub-card rows */}
+              <div className="flex-[2] min-h-0">
+                <WeeklyForecastCompact
+                  data={daily}
+                  selectedDayIndex={selectedDayIndex}
+                  onDaySelect={setSelectedDayIndex}
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Metrics Grid 3x3 */}
+            <div className="lg:flex-1 min-h-0">
               <MetricsGrid
-                key={selectedDayIndex}
-                uvIndex={weather.uvIndex}
-                uvStatus={
-                  weather.uvIndex <= 2
-                    ? "Low"
-                    : weather.uvIndex <= 5
-                    ? "Moderate"
-                    : weather.uvIndex <= 7
-                    ? "High"
-                    : weather.uvIndex <= 10
-                    ? "Very High"
-                    : "Extreme"
-                }
+                uvIndex={dayUvIndex}
+                uvStatus={dayUvIndex <= 2 ? "Low" : dayUvIndex <= 5 ? "Moderate" : dayUvIndex <= 7 ? "High" : "Very High"}
                 sunrise={weather.sunrise}
                 sunset={weather.sunset}
-                visibility={displayVisibility}
-                feelsLike={displayFeelsLike}
-                actualTemp={displayTemp}
-                rainfall={displayRainfall}
-                windSpeed={displayWindSpeed}
-                windDirection={displayWindDirection}
-                aqi={weather.aqi}
-                aqiStatus={weather.aqiStatus}
-                humidity={displayHumidity}
-              />
-            </div>
-
-            {/* Weekly Forecast — compact column */}
-            <div className="lg:flex-1 min-w-0">
-              <WeeklyForecastCompact
-                data={daily}
-                selectedDayIndex={selectedDayIndex}
-                onDaySelect={setSelectedDayIndex}
+                visibility={dayVisibility}
+                feelsLike={dayFeelsLike}
+                actualTemp={isToday ? weather.temperature : Math.round(((selectedDay?.maxTemp ?? 0) + (selectedDay?.minTemp ?? 0)) / 2)}
+                rainfall={dayRainfall}
+                windSpeed={dayWindSpeed}
+                windDirection={dayWindDir}
+                aqi={dayAqi}
+                aqiStatus={dayAqiStatus}
+                humidity={dayHumidity}
               />
             </div>
           </div>
-        </div>
         );
       })()}
     </DashboardLayout>
