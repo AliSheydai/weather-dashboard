@@ -2,11 +2,17 @@ export interface CurrentWeather {
   city: string;
   temperature: number;
   condition: string;
+  description: string;
   humidity: number;
   windSpeed: number;
+  windDirection: string;
   feelsLike: number;
   visibility: number;
   uvIndex: number;
+  aqi: number;
+  aqiStatus: string;
+  rainfall: number;
+  icon: string;
   sunrise: string;
   sunset: string;
 }
@@ -24,6 +30,11 @@ export interface DailyForecast {
   maxTemp: number;
   condition: string;
   icon: string;
+  humidity: number;
+  windSpeed: number;
+  windDirection: string;
+  visibility: number;
+  rainfall: number;
 }
 
 export interface WeatherData {

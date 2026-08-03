@@ -7,8 +7,13 @@ interface CurrentWeather {
   description: string;
   humidity: number;
   windSpeed: number;
+  windDirection: string;
   feelsLike: number;
   visibility: number;
+  uvIndex: number;
+  aqi: number;
+  aqiStatus: string;
+  rainfall: number;
   icon: string;
   sunrise: string;
   sunset: string;
@@ -27,6 +32,11 @@ interface DailyData {
   maxTemp: number;
   condition: string;
   icon: string;
+  humidity: number;
+  windSpeed: number;
+  windDirection: string;
+  visibility: number;
+  rainfall: number;
 }
 
 interface WeatherState {

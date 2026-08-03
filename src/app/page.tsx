@@ -123,7 +123,18 @@ export default function Home() {
       )}
 
       {/* Weather Content — Three-tier layout */}
-      {weather && !isLoading && !error && (
+      {weather && !isLoading && !error && (() => {
+        const selectedDay = daily[selectedDayIndex];
+        const isToday = selectedDayIndex === 0;
+        const displayTemp = isToday ? weather.temperature : Math.round((selectedDay.maxTemp + selectedDay.minTemp) / 2);
+        const displayHumidity = isToday ? weather.humidity : selectedDay.humidity;
+        const displayWindSpeed = isToday ? weather.windSpeed : selectedDay.windSpeed;
+        const displayWindDirection = isToday ? weather.windDirection : selectedDay.windDirection;
+        const displayVisibility = isToday ? weather.visibility : selectedDay.visibility;
+        const displayRainfall = isToday ? weather.rainfall : selectedDay.rainfall;
+        const displayFeelsLike = isToday ? weather.feelsLike : Math.round((selectedDay.maxTemp + selectedDay.minTemp) / 2);
+
+        return (
         <div className="h-full flex flex-col gap-3 animate-fade-in overflow-auto lg:overflow-hidden">
           {/* Tier 1: Unified Weather Card (~45%) */}
           <div className="lg:flex-45 min-h-0 lg:min-h-0">
@@ -144,19 +155,30 @@ export default function Home() {
             {/* Metrics Grid — 9 cards in 3x3 */}
             <div className="lg:flex-3 min-w-0">
               <MetricsGrid
-                uvIndex={3}
-                uvStatus="Moderate"
+                key={selectedDayIndex}
+                uvIndex={weather.uvIndex}
+                uvStatus={
+                  weather.uvIndex <= 2
+                    ? "Low"
+                    : weather.uvIndex <= 5
+                    ? "Moderate"
+                    : weather.uvIndex <= 7
+                    ? "High"
+                    : weather.uvIndex <= 10
+                    ? "Very High"
+                    : "Extreme"
+                }
                 sunrise={weather.sunrise}
                 sunset={weather.sunset}
-                visibility={weather.visibility}
-                feelsLike={weather.feelsLike}
-                actualTemp={weather.temperature}
-                rainfall={0}
-                windSpeed={weather.windSpeed}
-                windDirection="NW"
-                aqi={56}
-                aqiStatus="Moderate"
-                humidity={weather.humidity}
+                visibility={displayVisibility}
+                feelsLike={displayFeelsLike}
+                actualTemp={displayTemp}
+                rainfall={displayRainfall}
+                windSpeed={displayWindSpeed}
+                windDirection={displayWindDirection}
+                aqi={weather.aqi}
+                aqiStatus={weather.aqiStatus}
+                humidity={displayHumidity}
               />
             </div>
 
@@ -170,7 +192,8 @@ export default function Home() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </DashboardLayout>
   );
 }
