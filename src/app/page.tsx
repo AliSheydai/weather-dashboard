@@ -39,7 +39,7 @@ export default function Home() {
   } = useWeather();
 
   const { user, isAuthenticated, logout, initialize } = useAuthStore();
-  const { history, clearHistory } = useHistoryStore();
+  const { history } = useHistoryStore();
   const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
@@ -55,12 +55,6 @@ export default function Home() {
     low: 0,
     isFavorite: true,
   }));
-
-  const handleClearHistory = () => {
-    if (token) {
-      clearHistory(token);
-    }
-  };
 
   const handleRemoveFavorite = (cityName: string) => {
     const fav = favorites.find((f) => f.city === cityName);
@@ -81,7 +75,6 @@ export default function Home() {
           searchHistory={history}
           onToggleFavorite={toggleFavorite}
           onRemoveFavorite={handleRemoveFavorite}
-          onClearHistory={handleClearHistory}
           isAuthenticated={isAuthenticated}
           userName={user?.name || "Guest"}
           userEmail={user?.email || "guest@example.com"}

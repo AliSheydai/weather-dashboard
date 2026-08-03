@@ -3,7 +3,7 @@
 import { SearchCity } from "./SearchCity";
 import { CityList } from "./CityList";
 import { UserProfile } from "../user/UserProfile";
-import { MapPin, Star, Clock, Trash2, LogIn } from "lucide-react";
+import { MapPin, Star, Clock, LogIn } from "lucide-react";
 import Link from "next/link";
 
 interface CityData {
@@ -31,7 +31,6 @@ interface WeatherSidebarProps {
   searchHistory?: HistoryItem[];
   onToggleFavorite?: (city: string) => void;
   onRemoveFavorite?: (city: string) => void;
-  onClearHistory?: () => void;
   isAuthenticated?: boolean;
   userName?: string;
   userEmail?: string;
@@ -50,7 +49,6 @@ export function WeatherSidebar({
   searchHistory = [],
   onToggleFavorite,
   onRemoveFavorite,
-  onClearHistory,
   isAuthenticated = false,
   userName = "User",
   userEmail = "user@example.com",
@@ -68,23 +66,6 @@ export function WeatherSidebar({
   ];
 
   const cities = recentCities.length > 0 ? recentCities : defaultCities;
-
-  // Convert history items to CityData format for display
-  const historyCities: CityData[] = searchHistory.map((item) => ({
-    name: item.city,
-    temperature: 0,
-    condition: "Unknown",
-    high: 0,
-    low: 0,
-  }));
-
-  // Get unique history cities (latest search per city)
-  const uniqueHistoryCities = historyCities.reduce((acc, city) => {
-    if (!acc.find((c) => c.name === city.name)) {
-      acc.push(city);
-    }
-    return acc;
-  }, [] as CityData[]);
 
   return (
     <div className="flex flex-col h-full">
@@ -104,7 +85,12 @@ export function WeatherSidebar({
       </div>
 
       {/* Search */}
-      <SearchCity onSearch={onSearch} isLoading={isLoading} />
+      <SearchCity
+        onSearch={onSearch}
+        onCitySelect={onCitySelect}
+        isLoading={isLoading}
+        searchHistory={searchHistory}
+      />
 
       {/* Favorites Section */}
       {favoriteCities.length > 0 && (
@@ -125,51 +111,12 @@ export function WeatherSidebar({
         </div>
       )}
 
-      {/* Search History Section */}
-      {searchHistory.length > 0 && (
-        <div className="px-2 pt-2">
-          <div className="px-3 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 text-[#64748b]" />
-              <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
-                Recent Searches
-              </h3>
-            </div>
-            {onClearHistory && (
-              <button
-                onClick={onClearHistory}
-                className="p-1 rounded hover:bg-white/[0.04] transition-colors"
-                title="Clear history"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-[#64748b] hover:text-red-400" />
-              </button>
-            )}
-          </div>
-          <div className="space-y-1">
-            {uniqueHistoryCities.slice(0, 5).map((city) => (
-              <button
-                key={city.name}
-                onClick={() => onCitySelect(city.name)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedCity === city.name
-                    ? "bg-indigo-500/10 text-indigo-400"
-                    : "text-[#94a3b8] hover:text-white hover:bg-white/[0.04]"
-                }`}
-              >
-                <Clock className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{city.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent/Default Cities */}
+      {/* Popular Cities */}
       <div className="flex-1 overflow-hidden flex flex-col pt-2">
         <div className="px-5 py-2 flex items-center gap-2">
           <Clock className="h-3.5 w-3.5 text-[#64748b]" />
           <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
-            {searchHistory.length > 0 ? "Popular Cities" : "Popular Cities"}
+            Popular Cities
           </h3>
         </div>
         <CityList
