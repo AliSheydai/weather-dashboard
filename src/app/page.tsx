@@ -3,25 +3,18 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { WeatherSidebar } from "@/components/weather/WeatherSidebar";
-import { CurrentWeather } from "@/components/weather/CurrentWeather";
-import { HourlyForecast } from "@/components/weather/HourlyForecast";
-import { DailyForecast } from "@/components/weather/DailyForecast";
-import { UVIndexCard } from "@/components/weather/UVIndexCard";
-import { SunriseCard } from "@/components/weather/SunriseCard";
-import { VisibilityCard } from "@/components/weather/VisibilityCard";
-import { FeelsLikeCard } from "@/components/weather/FeelsLikeCard";
-import { WindCard } from "@/components/weather/WindCard";
-import { AirQualityCard } from "@/components/weather/AirQualityCard";
-import { HumidityCard } from "@/components/weather/HumidityCard";
-import { RainfallCard } from "@/components/weather/RainfallCard";
+import { UnifiedWeatherCard } from "@/components/weather/UnifiedWeatherCard";
+import { MetricsGrid } from "@/components/weather/MetricsGrid";
+import { WeeklyForecastCompact } from "@/components/weather/WeeklyForecastCompact";
 import { useWeather } from "@/hooks/useWeather";
 import { useAuthStore } from "@/stores/authStore";
 import { useHistoryStore } from "@/stores/historyStore";
-import { Loader2, AlertCircle, RefreshCw, Star } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("browse");
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
 
   const {
     selectedCity,
@@ -46,7 +39,11 @@ export default function Home() {
     initialize();
   }, [initialize]);
 
-  // Convert favorites to CityData format for sidebar
+  // Reset day selection when city changes
+  useEffect(() => {
+    setSelectedDayIndex(0);
+  }, [selectedCity]);
+
   const favoriteCities = favorites.map((fav) => ({
     name: fav.city,
     temperature: 0,
@@ -93,92 +90,85 @@ export default function Home() {
     >
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-indigo-400" />
-            <p className="text-[#94a3b8]">Loading weather data...</p>
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-400/60" />
+            <p className="text-xs text-white/30 uppercase tracking-widest">
+              Loading weather data
+            </p>
           </div>
         </div>
       )}
 
       {/* Error State */}
       {error && !isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-4 max-w-md text-center">
-            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-              <AlertCircle className="h-8 w-8 text-red-400" />
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4 max-w-sm text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+              <AlertCircle className="h-6 w-6 text-red-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white">
+            <h3 className="text-sm font-semibold text-white">
               Unable to load weather
             </h3>
-            <p className="text-[#94a3b8]">{error}</p>
+            <p className="text-xs text-white/40">{error}</p>
             <button
               onClick={retry}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white/6 text-white/60 rounded-xl hover:bg-white/10 transition-colors text-xs border border-white/6"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
               Try Again
             </button>
           </div>
         </div>
       )}
 
-      {/* Weather Content */}
+      {/* Weather Content — Three-tier layout */}
       {weather && !isLoading && !error && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Current Weather with Favorite Button */}
-          <div className="relative">
-            <CurrentWeather
+        <div className="h-full flex flex-col gap-3 animate-fade-in overflow-auto lg:overflow-hidden">
+          {/* Tier 1: Unified Weather Card (~45%) */}
+          <div className="lg:flex-45 min-h-0 lg:min-h-0">
+            <UnifiedWeatherCard
               temperature={weather.temperature}
               condition={weather.condition}
               description={weather.description}
               feelsLike={weather.feelsLike}
+              hourly={hourly}
+              daily={daily}
+              selectedDayIndex={selectedDayIndex}
+              onDayChange={setSelectedDayIndex}
             />
-            {/* Favorite Button */}
-            {isAuthenticated && (
-              <button
-                onClick={() => toggleFavorite(weather.city)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm"
-                title={
-                  isFavorite(weather.city)
-                    ? "Remove from favorites"
-                    : "Add to favorites"
-                }
-              >
-                <Star
-                  className={`h-5 w-5 ${
-                    isFavorite(weather.city)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-white"
-                  }`}
-                />
-              </button>
-            )}
           </div>
 
-          {/* Hourly Forecast */}
-          <HourlyForecast data={hourly} />
+          {/* Tier 2: Metrics Grid + Weekly Forecast (~55%) */}
+          <div className="lg:flex-55 min-h-0 flex flex-col lg:flex-row gap-3">
+            {/* Metrics Grid — 9 cards in 3x3 */}
+            <div className="lg:flex-3 min-w-0">
+              <MetricsGrid
+                uvIndex={3}
+                uvStatus="Moderate"
+                sunrise={weather.sunrise}
+                sunset={weather.sunset}
+                visibility={weather.visibility}
+                feelsLike={weather.feelsLike}
+                actualTemp={weather.temperature}
+                rainfall={0}
+                windSpeed={weather.windSpeed}
+                windDirection="NW"
+                aqi={56}
+                aqiStatus="Moderate"
+                humidity={weather.humidity}
+              />
+            </div>
 
-          {/* Statistics Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <UVIndexCard value={3} status="Moderate" />
-            <SunriseCard sunrise={weather.sunrise} sunset={weather.sunset} />
-            <WindCard speed={weather.windSpeed} direction="NW" />
-            <HumidityCard value={weather.humidity} />
+            {/* Weekly Forecast — compact column */}
+            <div className="lg:flex-1 min-w-0">
+              <WeeklyForecastCompact
+                data={daily}
+                selectedDayIndex={selectedDayIndex}
+                onDaySelect={setSelectedDayIndex}
+              />
+            </div>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <FeelsLikeCard
-              value={weather.feelsLike}
-              actual={weather.temperature}
-            />
-            <VisibilityCard value={weather.visibility} />
-            <AirQualityCard aqi={56} status="Moderate" />
-            <RainfallCard value={0} />
-          </div>
-
-          {/* Daily Forecast */}
-          <DailyForecast data={daily} />
         </div>
       )}
     </DashboardLayout>

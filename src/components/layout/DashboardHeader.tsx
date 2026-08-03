@@ -1,6 +1,7 @@
 "use client";
 
-import { MapPin, Compass, Map, BarChart3 } from "lucide-react";
+import { Compass, Map, BarChart3, Search, Bell } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface DashboardHeaderProps {
   city: string;
@@ -20,21 +21,20 @@ export function DashboardHeader({
   ];
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-[#0d0d14]/80 backdrop-blur-xl">
+    <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-white/[0.02] backdrop-blur-xl">
       {/* Location */}
-      <div className="flex items-center gap-2 text-sm">
-        <MapPin className="h-4 w-4 text-indigo-400" />
-        <span className="text-[#94a3b8] font-medium tracking-wide uppercase">
+      <div className="hidden sm:flex items-center gap-2">
+        <span className="text-xs text-white/25 uppercase tracking-widest font-medium">
           Home
         </span>
-        <span className="text-[#94a3b8]">&bull;</span>
-        <span className="text-white font-semibold uppercase tracking-wider">
+        <span className="text-white/10">/</span>
+        <span className="text-xs text-white/80 font-semibold uppercase tracking-wider">
           {city}
         </span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex items-center gap-1 bg-[#141420] rounded-xl p-1">
+      {/* Navigation Pills */}
+      <nav className="flex items-center gap-0.5 bg-white/[0.03] rounded-xl p-0.5 border border-white/[0.04]">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -42,18 +42,42 @@ export function DashboardHeader({
             <button
               key={tab.id}
               onClick={() => onTabChange?.(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? "bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/10"
-                  : "text-[#94a3b8] hover:text-white hover:bg-white/[0.05]"
-              }`}
+              className="relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors"
             >
-              <Icon className="h-4 w-4" />
-              {tab.label}
+              {isActive && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-white/[0.08] rounded-lg"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon
+                className={`h-3.5 w-3.5 relative z-10 ${
+                  isActive ? "text-indigo-400" : "text-white/30"
+                }`}
+              />
+              <span
+                className={`relative z-10 ${
+                  isActive ? "text-white/90" : "text-white/30"
+                }`}
+              >
+                {tab.label}
+              </span>
             </button>
           );
         })}
       </nav>
+
+      {/* Utility Icons */}
+      <div className="flex items-center gap-1">
+        <button className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all">
+          <Search className="h-4 w-4" />
+        </button>
+        <button className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all relative">
+          <Bell className="h-4 w-4" />
+          <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500" />
+        </button>
+      </div>
     </div>
   );
 }

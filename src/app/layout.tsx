@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Weather Dashboard",
-  description: "Professional weather dashboard with real-time data",
+  description: "Premium weather dashboard with real-time data",
 };
 
 export default function RootLayout({
@@ -37,7 +37,7 @@ export default function RootLayout({
         figtree.variable
       )}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="h-full overflow-hidden">{children}</body>
     </html>
   );
 }

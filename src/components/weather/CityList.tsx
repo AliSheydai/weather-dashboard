@@ -57,8 +57,8 @@ export function CityList({
               key={city.name}
               className={`group relative flex items-center p-3 rounded-xl cursor-pointer transition-all ${
                 isSelected
-                  ? "bg-indigo-500/10 border border-indigo-500/20"
-                  : "hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/10"
+                  : "hover:bg-white/[0.04] hover:border-white/[0.06] border border-transparent"
               }`}
               onClick={() => onSelect(city.name)}
             >
