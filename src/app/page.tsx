@@ -2,7 +2,7 @@
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
-import { WeatherSidebar } from "@/components/weather/WeatherSidebar";
+import { PremiumSidebar } from "@/components/weather/PremiumSidebar";
 import { TemperatureCard } from "@/components/weather/TemperatureCard";
 import { MetricsGrid } from "@/components/weather/MetricsGrid";
 import { WeeklyForecastCompact } from "@/components/weather/WeeklyForecastCompact";
@@ -10,10 +10,11 @@ import { useWeather } from "@/hooks/useWeather";
 import { useAuthStore } from "@/stores/authStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("browse");
+  const router = useRouter();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
 
   const {
@@ -27,7 +28,6 @@ export default function Home() {
     searchCity,
     selectCity,
     toggleFavorite,
-    isFavorite,
     retry,
   } = useWeather();
 
@@ -38,6 +38,11 @@ export default function Home() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    router.push("/login");
+  }, [logout, router]);
 
   useEffect(() => {
     setSelectedDayIndex(0);
@@ -62,7 +67,7 @@ export default function Home() {
   return (
     <DashboardLayout
       sidebar={
-        <WeatherSidebar
+        <PremiumSidebar
           onCitySelect={selectCity}
           selectedCity={selectedCity}
           onSearch={searchCity}
@@ -75,15 +80,24 @@ export default function Home() {
           userName={user?.name || "Guest"}
           userEmail={user?.email || "guest@example.com"}
           userAvatar={user?.avatar}
-          onLogout={logout}
+          onLogout={handleLogout}
           onSettings={() => {}}
+          onRefresh={retry}
+          currentWeather={weather ? {
+            city: weather.city,
+            temperature: weather.temperature,
+            condition: weather.condition,
+            aqi: (weather as any).aqi,
+            aqiStatus: (weather as any).aqiStatus,
+          } : null}
         />
       }
       header={
         <DashboardHeader
           city={selectedCity}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onSearch={searchCity}
+          isLoading={isLoading}
+          searchHistory={history}
         />
       }
     >

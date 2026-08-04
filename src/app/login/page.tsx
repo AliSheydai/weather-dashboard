@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { Cloud, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register } = useAuthStore();
+  const { login, register, isAuthenticated, initialize } = useAuthStore();
 
   const [isLogin, setIsLogin] = useState(true);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    initialize().then(() => {
+      if (useAuthStore.getState().isAuthenticated) {
+        router.push("/");
+      }
+    });
+  }, [initialize, router]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
