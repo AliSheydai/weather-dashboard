@@ -68,6 +68,9 @@ export class WeatherService {
         icon: data.weather[0].icon,
         sunrise: new Date(data.sys.sunrise * 1000).toLocaleTimeString(),
         sunset: new Date(data.sys.sunset * 1000).toLocaleTimeString(),
+        sunriseTimestamp: data.sys.sunrise,
+        sunsetTimestamp: data.sys.sunset,
+        timezone: data.timezone,
       };
     } catch (error) {
       if (error.response?.status === 404) {

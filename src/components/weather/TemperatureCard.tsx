@@ -38,8 +38,9 @@ interface TemperatureCardProps {
   daily: DailyData[];
   selectedDayIndex: number;
   onDayChange: (index: number) => void;
-  sunrise: string;
-  sunset: string;
+  sunriseTimestamp: number;
+  sunsetTimestamp: number;
+  timezone: number;
 }
 
 const getWeatherIcon = (condition: string, size: "sm" | "md" | "lg" = "md") => {
@@ -69,14 +70,15 @@ export function TemperatureCard({
   daily,
   selectedDayIndex,
   onDayChange,
-  sunrise,
-  sunset,
+  sunriseTimestamp,
+  sunsetTimestamp,
+  timezone,
 }: TemperatureCardProps) {
   const [direction, setDirection] = useState(0);
 
   const background = useMemo(
-    () => getWeatherBackground(condition, sunrise, sunset),
-    [condition, sunrise, sunset]
+    () => getWeatherBackground(condition, sunriseTimestamp, sunsetTimestamp, timezone),
+    [condition, sunriseTimestamp, sunsetTimestamp, timezone]
   );
 
   useEffect(() => {

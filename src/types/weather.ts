@@ -15,6 +15,9 @@ export interface CurrentWeather {
   icon: string;
   sunrise: string;
   sunset: string;
+  sunriseTimestamp: number;
+  sunsetTimestamp: number;
+  timezone: number;
 }
 
 export interface HourlyForecast {

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   CloudSun,
   PanelLeftClose,
@@ -20,10 +20,10 @@ import {
   Thermometer,
   CloudDrizzle,
   Leaf,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavUser } from "@/components/sidebar/nav-user"
-import { useWeatherStore } from "@/stores/weatherStore"
+import { NavUser } from "@/components/sidebar/nav-user";
+import { useWeatherStore } from "@/stores/weatherStore";
 import {
   Sidebar,
   SidebarContent,
@@ -36,33 +36,38 @@ import {
   SidebarGroupLabel,
   SidebarRail,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const navItems = [
   { title: "Dashboard", icon: LayoutDashboard, isActive: true },
   { title: "Browse", icon: Compass },
   { title: "Map", icon: Map },
   { title: "Metrics", icon: BarChart3 },
-]
+];
 
 const collections = [
   { name: "Summer Destinations", icon: Sun },
   { name: "Rainy Places", icon: CloudRain },
   { name: "Snow Cities", icon: Snowflake },
   { name: "Windy Spots", icon: Wind },
-]
+];
 
 const exploreItems = [
   { label: "Hottest City", icon: Flame, city: "Dubai", value: "48°C" },
   { label: "Coldest City", icon: Thermometer, city: "Yakutsk", value: "-38°C" },
-  { label: "Rainiest City", icon: CloudDrizzle, city: "Mawsynram", value: "11,871mm" },
+  {
+    label: "Rainiest City",
+    icon: CloudDrizzle,
+    city: "Mawsynram",
+    value: "11,871mm",
+  },
   { label: "Best Air Quality", icon: Leaf, city: "Zurich", value: "AQI 12" },
-]
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { open, toggleSidebar } = useSidebar()
-  const [activeNav, setActiveNav] = React.useState("Dashboard")
-  const weather = useWeatherStore((s) => s.current)
+  const { open, toggleSidebar } = useSidebar();
+  const [activeNav, setActiveNav] = React.useState("Dashboard");
+  const weather = useWeatherStore((s) => s.current);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -71,18 +76,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-2">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <CloudSun className="size-4" />
-              </div>
               {open && (
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Weather</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <CloudSun className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">Weather</span>
+                  </div>
                 </div>
               )}
               <button
                 onClick={toggleSidebar}
-                className="ml-auto size-7 flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-              >
+                className="ml-auto size-7 flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
                 {open ? (
                   <PanelLeftClose className="size-4" />
                 ) : (
@@ -104,8 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   tooltip={item.title}
                   isActive={activeNav === item.title}
-                  onClick={() => setActiveNav(item.title)}
-                >
+                  onClick={() => setActiveNav(item.title)}>
                   <item.icon />
                   <span>{item.title}</span>
                 </SidebarMenuButton>
@@ -163,7 +168,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton tooltip={`${item.city} ${item.value}`}>
                   <item.icon />
                   <span className="flex-1">{item.city}</span>
-                  <span className="text-xs text-sidebar-foreground/60">{item.value}</span>
+                  <span className="text-xs text-sidebar-foreground/60">
+                    {item.value}
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
@@ -178,7 +185,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 Now in {weather.city}
               </p>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">{weather.temperature}°</span>
+                <span className="text-2xl font-bold">
+                  {weather.temperature}°
+                </span>
                 <span className="text-xs text-sidebar-foreground/60">C</span>
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-sidebar-foreground/50">
@@ -198,5 +207,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

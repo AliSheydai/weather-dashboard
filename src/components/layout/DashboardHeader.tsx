@@ -141,7 +141,7 @@ export function DashboardHeader({
   return (
     <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-white/[0.02] backdrop-blur-xl">
       {/* Location */}
-      <div className="hidden sm:flex items-center ml-6 gap-2 min-w-[120px]">
+      <div className="hidden sm:flex items-center gap-2 min-w-[120px]">
         <span className="text-xs text-white/25 uppercase tracking-widest font-medium">
           Home
         </span>
