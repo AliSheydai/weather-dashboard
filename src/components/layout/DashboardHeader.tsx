@@ -4,6 +4,7 @@ import { Search, Bell, Loader2, Clock, TrendingUp } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebarStore } from "@/stores/sidebarStore";
+import { NotificationBell } from "@/components/header/NotificationBell";
 
 const POPULAR_CITIES = [
   "New York", "London", "Tokyo", "Paris", "Berlin", "Sydney", "Dubai",
@@ -18,6 +19,8 @@ interface DashboardHeaderProps {
   onSearch?: (city: string) => void;
   isLoading?: boolean;
   searchHistory?: { id: string; city: string; searchedAt: string }[];
+  token?: string | null;
+  isAuthenticated?: boolean;
 }
 
 export function DashboardHeader({
@@ -25,6 +28,8 @@ export function DashboardHeader({
   onSearch,
   isLoading,
   searchHistory = [],
+  token = null,
+  isAuthenticated = false,
 }: DashboardHeaderProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -198,10 +203,7 @@ export function DashboardHeader({
 
       {/* Utility Icons */}
       <div className="flex items-center gap-1 min-w-[120px] justify-end">
-        <button className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all relative">
-          <Bell className="h-4 w-4" />
-          <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500" />
-        </button>
+        <NotificationBell token={token} isAuthenticated={isAuthenticated} />
       </div>
     </div>
   );

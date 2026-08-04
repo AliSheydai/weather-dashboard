@@ -9,6 +9,7 @@ import { WeeklyForecastCompact } from "@/components/weather/WeeklyForecastCompac
 import { useWeather } from "@/hooks/useWeather";
 import { useAuthStore } from "@/stores/authStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useNotificationStore } from "@/stores/notificationStore";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -33,6 +34,7 @@ export default function Home() {
 
   const { user, isAuthenticated, logout, initialize } = useAuthStore();
   const { history } = useHistoryStore();
+  const { reset: resetNotifications } = useNotificationStore();
   const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
@@ -40,9 +42,10 @@ export default function Home() {
   }, [initialize]);
 
   const handleLogout = useCallback(() => {
+    resetNotifications();
     logout();
     router.push("/login");
-  }, [logout, router]);
+  }, [logout, router, resetNotifications]);
 
   useEffect(() => {
     setSelectedDayIndex(0);
@@ -98,6 +101,8 @@ export default function Home() {
           onSearch={searchCity}
           isLoading={isLoading}
           searchHistory={history}
+          token={token}
+          isAuthenticated={isAuthenticated}
         />
       }
     >
