@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getWeatherBackground } from "@/lib/weatherBackground";
 import {
   ChevronLeft,
   ChevronRight,
@@ -37,6 +38,8 @@ interface TemperatureCardProps {
   daily: DailyData[];
   selectedDayIndex: number;
   onDayChange: (index: number) => void;
+  sunrise: string;
+  sunset: string;
 }
 
 const getWeatherIcon = (condition: string, size: "sm" | "md" | "lg" = "md") => {
@@ -66,8 +69,20 @@ export function TemperatureCard({
   daily,
   selectedDayIndex,
   onDayChange,
+  sunrise,
+  sunset,
 }: TemperatureCardProps) {
   const [direction, setDirection] = useState(0);
+
+  const background = useMemo(
+    () => getWeatherBackground(condition, sunrise, sunset),
+    [condition, sunrise, sunset]
+  );
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = background.image;
+  }, [background.image]);
 
   const canGoPrev = selectedDayIndex > 0;
   const canGoNext = selectedDayIndex < daily.length - 1;
@@ -111,7 +126,20 @@ export function TemperatureCard({
   };
 
   return (
-    <div className="relative h-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900/80 via-slate-900/60 to-indigo-950/40 border border-white/[0.06] backdrop-blur-xl">
+    <div className="relative h-full rounded-2xl overflow-hidden border border-white/[0.06] backdrop-blur-xl">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-[background-image] duration-300 ease-in-out"
+        style={{ backgroundImage: `url(${background.image})` }}
+      />
+
+      {/* Dark overlay for text readability */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ease-in-out ${
+          background.isDay ? "bg-black/25" : "bg-black/45"
+        }`}
+      />
+
       {/* Ambient glow */}
       <div className="absolute -top-20 -right-20 w-80 h-80 bg-indigo-500/[0.07] rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/[0.05] rounded-full blur-[80px] pointer-events-none" />

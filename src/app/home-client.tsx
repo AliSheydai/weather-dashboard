@@ -153,6 +153,8 @@ export default function HomeClient() {
                   daily={daily}
                   selectedDayIndex={selectedDayIndex}
                   onDayChange={setSelectedDayIndex}
+                  sunrise={weather.sunrise}
+                  sunset={weather.sunset}
                 />
               </div>
 
