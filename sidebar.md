@@ -1,48 +1,39 @@
-## Premium Left Sidebar Specification
+## Replace the Current content shadcn Sidebar with a Weather-App Sidebar content
 
-Design and implement a **premium collapsible left sidebar** for the Weather Dashboard. The sidebar must feel like a modern macOS / Apple Weather / Arc Browser interface and match the existing dark glassmorphism dashboard style.
+The current left sidebar was copied from a shadcn demo and still contains unrelated items such as **Playground, Models, Documentation, Settings, Projects, Travel**, etc. Remove **all demo content** and replace it with a sidebar that is fully dedicated to the Weather Dashboard application.
 
-### Core Behavior
+### Important
 
-- The sidebar is positioned on the **left side** of the screen.
-- It must support **expanded** and **collapsed** states.
-- Expanded width: **260–280px**.
-- Collapsed width: **72px**.
-- Transition: smooth width animation (~250ms ease-in-out).
-- The collapse button should remain visible in both states.
-- In collapsed mode, show only icons with tooltips on hover.
-
-### Visual Style
-
-- Dark translucent background with backdrop blur.
-- Subtle border on the right side.
-- Soft inner glow and shadow.
-- Rounded corners on internal cards.
-- Hover states should gently brighten the background.
-- Active item should have a blue glow / highlighted glass effect.
+- Keep the existing shadcn sidebar component structure and animations.
+- Keep the dark glassmorphism visual style.
+- Replace only the content, icons, labels, grouping, and behavior.
+- close/open button is hide. fix it. Because the header covers it.
 
 ---
 
-# Top Section
+# Final Sidebar Content (Top to Bottom)
 
-### Brand Row
+## 1. Brand Section
 
-Include:
+Display at the top:
 
 - Weather app logo icon
-- App name “Weather”
+- App name: **Weather**
 - Collapse / expand button
 
-Icons:
+Use Lucide icons:
 
-- Logo: `CloudSun`
-- Toggle: `PanelLeftClose` / `PanelLeftOpen`
+- `CloudSun`
+- `PanelLeftClose`
+- `PanelLeftOpen`
+
+The brand row should stay visible in both expanded and collapsed states.
 
 ---
 
-# Main Navigation
+# 2. Primary Navigation
 
-Create a primary navigation group.
+Show these navigation items in this exact order:
 
 | Label     | Icon            |
 | --------- | --------------- |
@@ -53,138 +44,86 @@ Create a primary navigation group.
 
 Requirements:
 
+- Dashboard is active by default.
 - Active item has a glowing pill background.
-- Icons and labels aligned vertically.
-- Keyboard focus states included.
+- Clicking an item navigates to the corresponding page or tab.
 
 ---
 
-# Search Section
-
-Add a search input below navigation.
-
-Placeholder:
-
-```
-Search city or airport
-```
-
-Icon: `Search`
-
-Behavior:
-
-- Search cities in real time.
-- Press Enter to open that city dashboard.
-
----
-
-# Saved Cities Section
-
-Title: **Saved Cities**
-
-Display a scrollable list of saved cities.
-
-Each city item contains:
-
-- City name
-- Weather condition
-- Current temperature
-- Min / Max temperature
-
-Example:
-
-```
-New York
-Cloudy
-22°   H:29° L:15°
-```
-
-Requirements:
-
-- Active city highlighted.
-- Hover effect with subtle elevation.
-- Clicking a city updates the entire dashboard.
-
-Icon for each city: `MapPin`.
-
----
-
-# Quick Actions Section
+# 4. Quick Actions
 
 Title: **Quick Actions**
 
-Buttons:
+Render three compact action buttons:
 
 1. **Add City** (`Plus`)
 2. **Use Current Location** (`LocateFixed`)
 3. **Refresh Weather** (`RefreshCw`)
 
-Buttons should use compact glass buttons with icons.
+Buttons should be icon + label buttons with glass styling.
 
 ---
 
-# Collections Section
+# 5. Collections
 
 Title: **Collections**
 
-Display thematic city groups.
-
-Items:
+Show thematic weather collections:
 
 - Summer Destinations (`Sun`)
 - Rainy Places (`CloudRain`)
 - Snow Cities (`Snowflake`)
 - Windy Spots (`Wind`)
 
-Clicking a collection filters the Browse view.
+Clicking a collection filters the Browse page.
 
 ---
 
-# Explore Section
+# 6. Explore
 
 Title: **Explore**
 
-Show small statistic rows:
+Show dynamic weather highlights:
 
-- Hottest City 🔥
-- Coldest City ❄️
-- Rainiest City 🌧️
-- Best Air Quality 🌿
+- 🔥 Hottest City
+- ❄️ Coldest City
+- 🌧️ Rainiest City
+- 🌿 Best Air Quality
 
-Each row includes city name and value.
+Each row should display the city name and its value.
 
 ---
 
-# Bottom Sticky Section
+# 7. Live Weather Widget (Sticky Bottom)
 
-This section stays pinned to the bottom.
+Add a compact always-visible weather widget near the bottom:
 
-### Live Weather Widget
-
-Compact card:
-
-```
+```text
 NOW IN BERLIN
 24°C
 AQI 41
 Clear Sky
 ```
 
-Use a subtle glowing border.
+Style:
+
+- Small glass card
+- Subtle glowing border
+- Rounded corners
+
+This widget should remain visible even when the sidebar scrolls.
 
 ---
 
-# User Profile Section
+# 8. User Section (use user-nav.tsx component and it should be active login and logout)
 
 Display:
 
-- Avatar
+- User avatar
 - User name
-- Email
+- User email
 
-Click opens a dropdown menu.
-
-Dropdown items:
+Clicking the section opens a dropdown menu with:
 
 - Profile (`User`)
 - Settings (`Settings`)
@@ -193,67 +132,47 @@ Dropdown items:
 
 ---
 
-# Footer Icons
+# Items That Must Be Removed Completely
 
-Bottom utility icons:
+Delete these sections and all their children:
 
-- Notifications (`Bell`)
+- Platform
+- Playground
+- History
+- Starred
+- Models
+- Genesis
+- Explorer
+- Quantum
+- Documentation
+- Tutorials
+- Changelog
+- Settings (demo section)
+- General
+- Team
+- Billing
+- Limits
+- Projects
+- Design Engineering
+- Sales & Marketing
+- Travel
+- More
 
----
-
-# Interaction Details
-
-- Hover city item → background brighten.
-- Hover navigation item → slight scale (1.02).
-- Collapse/expand → animate labels fading in/out.
-- Tooltip appears in collapsed mode.
-- Sidebar should not cause layout shift in the main dashboard; the dashboard content should resize smoothly.
-
----
-
-# Responsive Behavior
-
-### Desktop
-
-Persistent sidebar.
-
-### Tablet
-
-Collapsed by default.
-
-### Mobile
-
-Transform into a **slide-in drawer** opened by a hamburger button.
-
-- Overlay background.
-- Swipe-to-close support preferred.
-- Close on outside click.
+No placeholder or empty group should remain.
 
 ---
 
-# Technical Requirements
+# Collapsed State
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Lucide React icons
-- Framer Motion for animations
-- Zustand for sidebar state management
+When the sidebar is collapsed:
 
-Suggested store:
-
-```ts
-type SidebarState = {
-  isOpen: boolean;
-  toggle: () => void;
-  open: () => void;
-  close: () => void;
-};
-```
+- Show only icons.
+- Keep tooltips for every item.
+- Keep the live weather widget hidden.
+- Keep the collapse button visible.
 
 ---
 
-# UX Goal
+# Final Goal
 
-The sidebar must feel like a **weather command center**, not a simple navigation menu. It should provide quick access to locations, discovery features, live weather status, and user actions while maintaining a clean, premium, minimalist aesthetic consistent with the reference dashboard.
+The finished sidebar must look like a **professional weather application control center**, providing navigation, search, saved locations, discovery features, live weather status, and user actions. It should no longer resemble a shadcn demo sidebar in any way.
