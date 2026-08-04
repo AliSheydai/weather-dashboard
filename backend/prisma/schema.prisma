@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String         @map("password_hash")
-  name         String?
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
-  favorites    FavoriteCity[]
-  history      SearchHistory[]
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  name          String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  favorites     FavoriteCity[]
+  history       SearchHistory[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -39,4 +40,26 @@ model SearchHistory {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("search_history")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  WEATHER_ALERT
+  SYSTEM
+  WARNING
 }

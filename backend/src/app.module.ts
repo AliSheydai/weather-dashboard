@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { WeatherModule } from './weather/weather.module';
 import { HistoryModule } from './history/history.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FavoritesModule } from './favorites/favorites.module';
     WeatherModule,
     HistoryModule,
     FavoritesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

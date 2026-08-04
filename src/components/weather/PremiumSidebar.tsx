@@ -653,17 +653,6 @@ export function PremiumSidebar({
             </button>
           )}
         </div>
-
-        {/* Footer Icons */}
-        <div className="px-2 pb-3">
-          <div className="flex items-center justify-center">
-            <SidebarTooltip content="Notifications">
-              <button className="p-2 rounded-lg text-white/20 hover:text-white/50 hover:bg-white/[0.04] transition-all">
-                <Bell className="h-4 w-4" />
-              </button>
-            </SidebarTooltip>
-          </div>
-        </div>
       </div>
     </motion.div>
   );
