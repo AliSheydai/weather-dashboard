@@ -77,7 +77,7 @@ export function UserProfile({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#1a1a2e] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
           <button
             onClick={() => {
               onSettings?.();

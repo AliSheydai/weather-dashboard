@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
@@ -70,7 +71,7 @@ function NotificationItem({
       className={`group relative flex gap-3 px-4 py-3 transition-colors cursor-pointer ${
         notification.isRead
           ? "opacity-60 hover:opacity-80"
-          : "hover:bg-white/[0.04]"
+          : "hover:bg-white/4"
       }`}
       onClick={() => !notification.isRead && onMarkAsRead(notification.id)}
     >
@@ -147,6 +148,9 @@ export function NotificationBell({
 }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   const {
     items,
@@ -190,9 +194,12 @@ export function NotificationBell({
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
@@ -210,6 +217,16 @@ export function NotificationBell({
       document.addEventListener("keydown", handleKeyDown);
     }
     return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  // Track button position for portal dropdown
+  useLayoutEffect(() => {
+    if (!isOpen || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
   }, [isOpen]);
 
   const handleToggle = () => {
@@ -243,6 +260,7 @@ export function NotificationBell({
     <div className="relative" ref={containerRef}>
       {/* Bell Button */}
       <button
+        ref={buttonRef}
         onClick={handleToggle}
         className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all relative"
         aria-label="Notifications"
@@ -261,16 +279,19 @@ export function NotificationBell({
         )}
       </button>
 
-      {/* Dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-80 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden shadow-xl shadow-black/50 z-50"
-          >
+      {/* Dropdown (portaled to body to escape header's backdrop-blur compositing layer) */}
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              ref={dropdownRef}
+              initial={{ opacity: 0, y: -4, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              style={{ top: dropdownPos.top, right: dropdownPos.right }}
+              className="fixed w-80 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl shadow-black/50 z-50"
+            >
             {/* Header */}
             <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -348,7 +369,9 @@ export function NotificationBell({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

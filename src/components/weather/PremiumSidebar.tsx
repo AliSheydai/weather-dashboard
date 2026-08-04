@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -161,13 +162,19 @@ export function PremiumSidebar({
   const [activeNav, setActiveNav] = useState("browse");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const [userDropdownPos, setUserDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   // Close user menu on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
       if (
         userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
+        !userMenuRef.current.contains(target) &&
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(target)
       ) {
         setUserMenuOpen(false);
       }
@@ -176,6 +183,17 @@ export function PremiumSidebar({
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [userMenuOpen]);
+
+  // Track button position for portal dropdown
+  useLayoutEffect(() => {
+    if (!userMenuOpen || !userButtonRef.current) return;
+    const rect = userButtonRef.current.getBoundingClientRect();
+    setUserDropdownPos({
+      top: rect.top - 8,
+      left: rect.left,
+      width: rect.width,
+    });
   }, [userMenuOpen]);
 
   const initials = userName
@@ -601,6 +619,7 @@ export function PremiumSidebar({
           {isAuthenticated ? (
             <div className="relative">
               <button
+                ref={userButtonRef}
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
@@ -638,51 +657,60 @@ export function PremiumSidebar({
                 </AnimatePresence>
               </button>
 
-              {/* User Dropdown */}
-              <AnimatePresence>
-                {userMenuOpen && isOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute bottom-full left-0 right-0 mb-1 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-50">
-                    <button
-                      onClick={() => {
-                        onSettings?.();
-                        setUserMenuOpen(false);
+              {/* User Dropdown (portaled to body to escape sidebar's backdrop-blur) */}
+              {createPortal(
+                <AnimatePresence>
+                  {userMenuOpen && isOpen && (
+                    <motion.div
+                      ref={userDropdownRef}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        bottom: window.innerHeight - userDropdownPos.top,
+                        left: userDropdownPos.left,
+                        width: userDropdownPos.width,
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors">
-                      <User className="h-4 w-4" />
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => {
-                        onSettings?.();
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors">
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors">
-                      <Thermometer className="h-4 w-4" />
-                      Temperature Unit
-                    </button>
-                    <div className="h-px bg-white/[0.06]" />
-                    <button
-                      onClick={() => {
-                        onLogout?.();
-                        setUserMenuOpen(false);
-                        router.push("/login");
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      className="fixed mb-1 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-50">
+                      <button
+                        onClick={() => {
+                          onSettings?.();
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors">
+                        <User className="h-4 w-4" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          onSettings?.();
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors">
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </button>
+                      <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors">
+                        <Thermometer className="h-4 w-4" />
+                        Temperature Unit
+                      </button>
+                      <div className="h-px bg-white/[0.06]" />
+                      <button
+                        onClick={() => {
+                          onLogout?.();
+                          setUserMenuOpen(false);
+                          router.push("/login");
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>,
+                document.body
+              )}
             </div>
           ) : (
             <button

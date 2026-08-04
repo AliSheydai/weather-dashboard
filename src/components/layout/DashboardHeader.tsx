@@ -1,7 +1,8 @@
 "use client";
 
 import { Search, Bell, Loader2, Clock, TrendingUp } from "lucide-react";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { NotificationBell } from "@/components/header/NotificationBell";
@@ -36,6 +37,8 @@ export function DashboardHeader({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
+  const [searchDropdownPos, setSearchDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   // Recent cities from history
   const recentCities = useMemo(() => {
@@ -71,13 +74,30 @@ export function DashboardHeader({
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Track input position for portal dropdown
+  useLayoutEffect(() => {
+    if (!isDropdownOpen || !inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setSearchDropdownPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, [isDropdownOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,52 +172,57 @@ export function DashboardHeader({
             className="w-full h-9 pl-10 pr-4 bg-white/[0.04] border border-white/[0.06] rounded-xl text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
           />
 
-          {/* Dropdown */}
-          <AnimatePresence>
-            {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15 }}
-                className="absolute left-0 right-0 top-full mt-1 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden shadow-xl shadow-black/50 z-50"
-              >
-                <div className="px-3 py-2 flex items-center gap-2 border-b border-white/[0.06]">
-                  {showRecent ? (
-                    <>
-                      <Clock className="h-3 w-3 text-white/25" />
-                      <span className="text-[10px] font-semibold text-white/25 uppercase tracking-wider">Recent</span>
-                    </>
-                  ) : (
-                    <>
-                      <TrendingUp className="h-3 w-3 text-white/25" />
-                      <span className="text-[10px] font-semibold text-white/25 uppercase tracking-wider">Suggestions</span>
-                    </>
-                  )}
-                </div>
-                <div className="py-1 max-h-[240px] overflow-y-auto">
-                  {dropdownItems.map((item, index) => (
-                    <button
-                      key={item}
-                      onClick={() => handleSelect(item)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                        index === selectedIndex
-                          ? "bg-indigo-500/15 text-white"
-                          : "text-white/50 hover:bg-white/[0.04] hover:text-white"
-                      }`}
-                    >
-                      {showRecent ? (
-                        <Clock className="h-3.5 w-3.5 text-white/25 shrink-0" />
-                      ) : (
-                        <Search className="h-3.5 w-3.5 text-white/25 shrink-0" />
-                      )}
-                      <span className="truncate">{item}</span>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Dropdown (portaled to body to escape header's backdrop-blur) */}
+          {createPortal(
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  ref={searchDropdownRef}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  style={{ top: searchDropdownPos.top, left: searchDropdownPos.left, width: searchDropdownPos.width }}
+                  className="fixed mt-1 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl shadow-black/50 z-50"
+                >
+                  <div className="px-3 py-2 flex items-center gap-2 border-b border-white/[0.06]">
+                    {showRecent ? (
+                      <>
+                        <Clock className="h-3 w-3 text-white/25" />
+                        <span className="text-[10px] font-semibold text-white/25 uppercase tracking-wider">Recent</span>
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="h-3 w-3 text-white/25" />
+                        <span className="text-[10px] font-semibold text-white/25 uppercase tracking-wider">Suggestions</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="py-1 max-h-[240px] overflow-y-auto">
+                    {dropdownItems.map((item, index) => (
+                      <button
+                        key={item}
+                        onClick={() => handleSelect(item)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                          index === selectedIndex
+                            ? "bg-indigo-500/15 text-white"
+                            : "text-white/50 hover:bg-white/[0.04] hover:text-white"
+                        }`}
+                      >
+                        {showRecent ? (
+                          <Clock className="h-3.5 w-3.5 text-white/25 shrink-0" />
+                        ) : (
+                          <Search className="h-3.5 w-3.5 text-white/25 shrink-0" />
+                        )}
+                        <span className="truncate">{item}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>,
+            document.body
+          )}
         </form>
       </div>
 
