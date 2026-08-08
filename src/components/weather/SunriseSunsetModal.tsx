@@ -60,6 +60,14 @@ function getCurrentTimeDecimal(): number {
   return now.getHours() + now.getMinutes() / 60;
 }
 
+// Returns a style that keeps the marker label within the container bounds
+// by adjusting translateX based on how close to the edges it is.
+function markerStyle(pct: number): React.CSSProperties {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const tx = clamped < 8 ? "0%" : clamped > 92 ? "-100%" : "-50%";
+  return { left: `${clamped}%`, transform: `translateX(${tx})` };
+}
+
 // Generate 7-day daylight data with realistic variation
 function generate7DayData(
   sunriseH: number,
@@ -230,7 +238,7 @@ export function SunriseSunsetModal({
       </div>
 
       {/* Primary: Horizontal Daylight Timeline */}
-      <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-5">
+      <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-5 overflow-hidden">
         <p className="text-[10px] text-white/30 uppercase tracking-widest mb-4">
           Daylight Timeline
         </p>
@@ -264,10 +272,7 @@ export function SunriseSunsetModal({
           {/* Sunrise marker */}
           <div
             className="absolute top-0 flex flex-col items-center"
-            style={{
-              left: `${(sunriseDecimal / 24) * 100}%`,
-              transform: "translateX(-50%)",
-            }}
+            style={markerStyle((sunriseDecimal / 24) * 100)}
           >
             <div className="w-4 h-4 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center">
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
@@ -282,10 +287,7 @@ export function SunriseSunsetModal({
           {/* Solar noon marker */}
           <div
             className="absolute top-0 flex flex-col items-center"
-            style={{
-              left: `${(solarNoonDecimal / 24) * 100}%`,
-              transform: "translateX(-50%)",
-            }}
+            style={markerStyle((solarNoonDecimal / 24) * 100)}
           >
             <div className="w-3 h-3 rounded-full bg-yellow-400/20 border border-yellow-400/50 flex items-center justify-center">
               <Sun className="w-2 h-2 text-yellow-400" />
@@ -301,10 +303,7 @@ export function SunriseSunsetModal({
           {/* Sunset marker */}
           <div
             className="absolute top-0 flex flex-col items-center"
-            style={{
-              left: `${(sunsetDecimal / 24) * 100}%`,
-              transform: "translateX(-50%)",
-            }}
+            style={markerStyle((sunsetDecimal / 24) * 100)}
           >
             <div className="w-4 h-4 rounded-full bg-purple-500/20 border-2 border-purple-400 flex items-center justify-center">
               <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
@@ -317,10 +316,7 @@ export function SunriseSunsetModal({
           {/* Current time marker */}
           <div
             className="absolute top-0 flex flex-col items-center z-10"
-            style={{
-              left: `${(currentDecimal / 24) * 100}%`,
-              transform: "translateX(-50%)",
-            }}
+            style={markerStyle((currentDecimal / 24) * 100)}
           >
             <motion.div
               initial={{ scale: 0 }}
