@@ -141,9 +141,9 @@ export default function HomeClient() {
         return (
           <div className="h-full flex flex-col lg:flex-row gap-3 animate-fade-in overflow-auto lg:overflow-hidden">
             {/* Left Column: Temperature + Weekly Forecast */}
-            <div className="lg:w-[38%] flex flex-col gap-3 min-h-0 lg:min-h-0">
-              {/* Temperature Card — height = 1 sub-card row */}
-              <div className="flex-[1] min-h-0">
+            <div className="lg:w-[38%] flex flex-col gap-3 lg:min-h-0">
+              {/* Temperature Card */}
+              <div className="min-h-[240px] sm:min-h-[280px] lg:flex-[1] lg:min-h-0">
                 <TemperatureCard
                   temperature={weather.temperature}
                   condition={weather.condition}
@@ -159,8 +159,8 @@ export default function HomeClient() {
                 />
               </div>
 
-              {/* Weekly Forecast — height = 2 sub-card rows */}
-              <div className="flex-[2] min-h-0">
+              {/* Weekly Forecast */}
+              <div className="min-h-[200px] sm:min-h-[240px] lg:flex-[2] lg:min-h-0">
                 <WeeklyForecastCompact
                   data={daily}
                   selectedDayIndex={selectedDayIndex}

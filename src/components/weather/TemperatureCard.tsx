@@ -160,7 +160,7 @@ export function TemperatureCard({
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
               <div className="flex items-start gap-1">
-                <span className="text-[5rem] font-extralight text-white leading-none tracking-tighter">
+                <span className="text-[3rem] sm:text-[4rem] lg:text-[5rem] font-extralight text-white leading-none tracking-tighter">
                   {selectedDayIndex === 0
                     ? temperature
                     : Math.round((selectedDay.maxTemp + selectedDay.minTemp) / 2)}

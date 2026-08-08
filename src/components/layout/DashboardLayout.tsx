@@ -48,7 +48,7 @@ export function DashboardLayout({
         </header>
 
         {/* Dashboard Content */}
-        <main className="flex-1 overflow-hidden p-3 sm:p-4">
+        <main className="flex-1 overflow-auto lg:overflow-hidden p-3 sm:p-4">
           {children}
         </main>
       </div>

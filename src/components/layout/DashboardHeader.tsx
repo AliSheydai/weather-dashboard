@@ -227,7 +227,7 @@ export function DashboardHeader({
       </div>
 
       {/* Utility Icons */}
-      <div className="flex items-center gap-1 min-w-[120px] justify-end">
+      <div className="flex items-center gap-1 min-w-fit sm:min-w-[120px] justify-end">
         <NotificationBell token={token} isAuthenticated={isAuthenticated} />
       </div>
     </div>

@@ -83,7 +83,7 @@ export function MetricsGrid({
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 h-full">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 lg:h-full">
         <MetricCard
           index={0}
           icon={<Sun className="h-3.5 w-3.5" />}
