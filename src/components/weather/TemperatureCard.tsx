@@ -194,32 +194,6 @@ export function TemperatureCard({
           </AnimatePresence>
         </div>
 
-        {/* Day navigation */}
-        <div className="flex items-center justify-between pb-3">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handlePrev}
-              disabled={!canGoPrev}
-              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-[10px] text-white/20 uppercase tracking-widest font-medium px-1">
-              {selectedDayIndex === 0 ? "Today" : selectedDay?.day}
-            </span>
-            <button
-              onClick={handleNext}
-              disabled={!canGoNext}
-              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-          <span className="text-[10px] text-white/15">
-            {selectedDayIndex + 1} / {daily.length}
-          </span>
-        </div>
-
         {/* Hourly Forecast */}
         <div className="border-t border-white/[0.06] pt-3">
           <div className="flex gap-1 overflow-x-auto scrollbar-none">
