@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getWeatherBackground } from "@/lib/weatherBackground";
 import {
@@ -95,26 +95,60 @@ export function TemperatureCard({
   const selectedDay = daily[selectedDayIndex];
   const todayTemp = daily[0]?.maxTemp ?? temperature;
   const maxHourIndex = hourly.length - 1;
+  const VISIBLE_COUNT = 5;
 
-  const handlePrevHour = () => {
+  // Sliding window start index
+  const [windowStart, setWindowStart] = useState(0);
+  const maxWindowStart = Math.max(0, hourly.length - VISIBLE_COUNT);
+
+  // Reset window when hour selection or city/day changes
+  useEffect(() => {
+    setWindowStart(0);
+  }, [selectedDayIndex]);
+
+  const handlePrevHour = useCallback(() => {
     if (selectedHourIndex === null) {
       onHourSelect(0);
+      setWindowStart(0);
     } else if (selectedHourIndex > 0) {
-      onHourSelect(selectedHourIndex - 1);
+      const newIndex = selectedHourIndex - 1;
+      onHourSelect(newIndex);
+      // Shift window left if selection goes before visible range
+      if (newIndex < windowStart) {
+        setWindowStart(newIndex);
+      }
     }
-  };
+  }, [selectedHourIndex, onHourSelect, windowStart]);
 
-  const handleNextHour = () => {
+  const handleNextHour = useCallback(() => {
     if (selectedHourIndex === null) {
       onHourSelect(0);
+      setWindowStart(0);
     } else if (selectedHourIndex < maxHourIndex) {
-      onHourSelect(selectedHourIndex + 1);
+      const newIndex = selectedHourIndex + 1;
+      onHourSelect(newIndex);
+      // Shift window right if selection goes beyond visible range
+      if (newIndex >= windowStart + VISIBLE_COUNT) {
+        setWindowStart(Math.min(newIndex - VISIBLE_COUNT + 1, maxWindowStart));
+      }
     }
-  };
+  }, [selectedHourIndex, onHourSelect, maxHourIndex, windowStart, maxWindowStart]);
 
   const handleHourClick = (index: number) => {
-    onHourSelect(selectedHourIndex === index ? null : index);
+    if (selectedHourIndex === index) {
+      onHourSelect(null);
+    } else {
+      onHourSelect(index);
+      // Ensure clicked item is visible in window
+      if (index < windowStart) {
+        setWindowStart(index);
+      } else if (index >= windowStart + VISIBLE_COUNT) {
+        setWindowStart(Math.min(index - VISIBLE_COUNT + 1, maxWindowStart));
+      }
+    }
   };
+
+  const visibleHours = hourly.slice(windowStart, windowStart + VISIBLE_COUNT);
 
   // Determine what temperature/condition to show
   const displayTemp =
@@ -216,37 +250,44 @@ export function TemperatureCard({
               }
               className="p-1 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
-            <div className="flex gap-1 overflow-x-auto scrollbar-none flex-1">
-              {hourly.slice(0, 8).map((h, i) => {
-                const isActive =
-                  selectedHourIndex === i ||
-                  (selectedHourIndex === null && i === 0);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => handleHourClick(i)}
-                    className={`flex flex-col items-center flex-1 min-w-[48px] py-1.5 px-1 rounded-xl transition-colors cursor-pointer ${
-                      isActive
-                        ? "bg-white/[0.08]"
-                        : "hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    <span
-                      className={`text-[10px] font-medium mb-1 ${
-                        isActive ? "text-indigo-400" : "text-white/30"
+            <div className="flex gap-1 flex-1 overflow-hidden">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {visibleHours.map((h) => {
+                  const realIndex = hourly.indexOf(h);
+                  const isActive = selectedHourIndex === realIndex;
+                  const isFirst = realIndex === 0;
+                  return (
+                    <motion.button
+                      key={realIndex}
+                      layout
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      onClick={() => handleHourClick(realIndex)}
+                      className={`flex flex-col items-center flex-1 min-w-0 py-1.5 px-1 rounded-xl transition-colors cursor-pointer ${
+                        isActive
+                          ? "bg-white/[0.08]"
+                          : "hover:bg-white/[0.04]"
                       }`}
                     >
-                      {i === 0 ? "Now" : h.hour}
-                    </span>
-                    {getWeatherIcon(h.condition, "sm")}
-                    <span className="text-[11px] font-semibold text-white/80 mt-1">
-                      {h.temperature}°
-                    </span>
-                  </button>
-                );
-              })}
+                      <span
+                        className={`text-[10px] font-medium mb-1 ${
+                          isActive ? "text-indigo-400" : "text-white/30"
+                        }`}
+                      >
+                        {isFirst ? "Now" : h.hour}
+                      </span>
+                      {getWeatherIcon(h.condition, "sm")}
+                      <span className="text-[11px] font-semibold text-white/80 mt-1">
+                        {h.temperature}°
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </AnimatePresence>
             </div>
             <button
               onClick={handleNextHour}
@@ -256,7 +297,7 @@ export function TemperatureCard({
               }
               className="p-1 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         </div>
