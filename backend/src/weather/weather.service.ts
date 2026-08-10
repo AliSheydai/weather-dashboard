@@ -194,6 +194,12 @@ export class WeatherService {
         temperature: Math.round(item.main.temp),
         condition: item.weather[0].main,
         icon: item.weather[0].icon,
+        humidity: item.main.humidity,
+        windSpeed: Math.round(item.wind.speed * 3.6),
+        windDirection: this.degToCompass(item.wind.deg ?? 0),
+        visibility: Math.round((item.visibility ?? 10000) / 1000),
+        rainfall: Math.round((item.rain?.['3h'] ?? 0) * 10) / 10,
+        feelsLike: Math.round(item.main.feels_like),
       }));
     } catch (error) {
       throw new HttpException(

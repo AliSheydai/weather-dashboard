@@ -27,6 +27,12 @@ interface HourlyData {
   temperature: number;
   condition: string;
   icon: string;
+  humidity: number;
+  windSpeed: number;
+  windDirection: string;
+  visibility: number;
+  rainfall: number;
+  feelsLike: number;
 }
 
 interface DailyData {

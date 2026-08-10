@@ -22,6 +22,7 @@ const SidebarShell = dynamic(
 export default function HomeClient() {
   const router = useRouter();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedHourIndex, setSelectedHourIndex] = useState<number | null>(null);
 
   const {
     selectedCity,
@@ -54,7 +55,12 @@ export default function HomeClient() {
 
   useEffect(() => {
     setSelectedDayIndex(0);
+    setSelectedHourIndex(null);
   }, [selectedCity]);
+
+  useEffect(() => {
+    setSelectedHourIndex(null);
+  }, [selectedDayIndex]);
 
   const favoriteCities = favorites.map((fav) => ({
     name: fav.city,
@@ -124,16 +130,17 @@ export default function HomeClient() {
       {weather && !isLoading && !error && (() => {
         const selectedDay = daily[selectedDayIndex];
         const isToday = selectedDayIndex === 0;
+        const selectedHour = selectedHourIndex !== null ? hourly[selectedHourIndex] : null;
 
-        // Derive metric values from selected day's data
-        const dayHumidity = selectedDay?.humidity ?? weather.humidity;
-        const dayWindSpeed = selectedDay?.windSpeed ?? weather.windSpeed;
-        const dayWindDir = selectedDay?.windDirection ?? "NW";
-        const dayVisibility = selectedDay?.visibility ?? weather.visibility;
-        const dayRainfall = selectedDay?.rainfall ?? 0;
-        const dayFeelsLike = isToday
+        // Derive metric values: prefer selected hour, then selected day, then current weather
+        const dayHumidity = selectedHour?.humidity ?? selectedDay?.humidity ?? weather.humidity;
+        const dayWindSpeed = selectedHour?.windSpeed ?? selectedDay?.windSpeed ?? weather.windSpeed;
+        const dayWindDir = selectedHour?.windDirection ?? selectedDay?.windDirection ?? "NW";
+        const dayVisibility = selectedHour?.visibility ?? selectedDay?.visibility ?? weather.visibility;
+        const dayRainfall = selectedHour?.rainfall ?? selectedDay?.rainfall ?? 0;
+        const dayFeelsLike = selectedHour?.feelsLike ?? (isToday
           ? weather.feelsLike
-          : Math.round(((selectedDay?.maxTemp ?? 0) + (selectedDay?.minTemp ?? 0)) / 2);
+          : Math.round(((selectedDay?.maxTemp ?? 0) + (selectedDay?.minTemp ?? 0)) / 2));
         const dayUvIndex = isToday ? (weather as any).uvIndex ?? 3 : Math.max(0, Math.min(11, ((weather as any).uvIndex ?? 3) + selectedDayIndex - 3));
         const dayAqi = isToday ? (weather as any).aqi ?? 56 : Math.max(0, Math.min(300, ((weather as any).aqi ?? 56) + (selectedDayIndex * 5) - 15));
         const dayAqiStatus = dayAqi <= 50 ? "Good" : dayAqi <= 100 ? "Moderate" : dayAqi <= 150 ? "Unhealthy SG" : "Unhealthy";
@@ -152,10 +159,11 @@ export default function HomeClient() {
                   hourly={hourly}
                   daily={daily}
                   selectedDayIndex={selectedDayIndex}
-                  onDayChange={setSelectedDayIndex}
                   sunriseTimestamp={weather.sunriseTimestamp}
                   sunsetTimestamp={weather.sunsetTimestamp}
                   timezone={weather.timezone}
+                  selectedHourIndex={selectedHourIndex}
+                  onHourSelect={setSelectedHourIndex}
                 />
               </div>
 
