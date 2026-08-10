@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { MetricCard } from "./MetricCard";
 import { MetricDetailDialog } from "./MetricDetailDialog";
+import { MiniUVGauge } from "./MiniUVGauge";
 import { UVIndexModal } from "./UVIndexModal";
 import { SunriseSunsetModal } from "./SunriseSunsetModal";
 import { WindModal } from "./WindModal";
@@ -78,7 +79,6 @@ export function MetricsGrid({
       ? `${feelsLikeDiff}° cooler than actual`
       : "Same as actual";
 
-  const uvPct = Math.min((uvIndex / 11) * 100, 100);
   const aqiPct = Math.min((aqi / 300) * 100, 100);
 
   return (
@@ -90,14 +90,7 @@ export function MetricsGrid({
           title="UV Index"
           value={`${uvIndex}`}
           subtitle={uvStatus}
-          extra={
-            <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500 rounded-full"
-                style={{ width: `${uvPct}%` }}
-              />
-            </div>
-          }
+          extra={<MiniUVGauge uvIndex={uvIndex} />}
           onShowMore={() => setOpenDialog("uv")}
         />
 
