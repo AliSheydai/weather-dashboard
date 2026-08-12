@@ -16,6 +16,14 @@ import {
 import { MetricCard } from "./MetricCard";
 import { MetricDetailDialog } from "./MetricDetailDialog";
 import { MiniUVGauge } from "./MiniUVGauge";
+import { MiniVisibilityGauge } from "./MiniVisibilityGauge";
+import { MiniAQIGauge } from "./MiniAQIGauge";
+import { MiniHumidityChart } from "./MiniHumidityChart";
+import { MiniFeelsLikeChart } from "./MiniFeelsLikeChart";
+import { MiniAvgTempChart } from "./MiniAvgTempChart";
+import { MiniRainfallChart } from "./MiniRainfallChart";
+import { MiniWindRadar } from "./MiniWindRadar";
+import { MiniSunTimeline } from "./MiniSunTimeline";
 import { UVIndexModal } from "./UVIndexModal";
 import { SunriseSunsetModal } from "./SunriseSunsetModal";
 import { WindModal } from "./WindModal";
@@ -79,8 +87,6 @@ export function MetricsGrid({
       ? `${feelsLikeDiff}° cooler than actual`
       : "Same as actual";
 
-  const aqiPct = Math.min((aqi / 300) * 100, 100);
-
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 lg:h-full">
@@ -100,15 +106,7 @@ export function MetricsGrid({
           title="Sunrise & Sunset"
           value={sunrise}
           subtitle={`Sunset ${sunset}`}
-          extra={
-            <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden relative mt-1">
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/30 via-amber-500/10 to-purple-500/30" />
-              <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full"
-                style={{ width: "60%" }}
-              />
-            </div>
-          }
+          extra={<MiniSunTimeline sunrise={sunrise} sunset={sunset} />}
           onShowMore={() => setOpenDialog("sunrise")}
         />
 
@@ -118,6 +116,7 @@ export function MetricsGrid({
           title="Visibility"
           value={`${visibility} km`}
           subtitle={visibilityStatus}
+          extra={<MiniVisibilityGauge visibility={visibility} />}
           onShowMore={() => setOpenDialog("visibility")}
         />
 
@@ -127,6 +126,7 @@ export function MetricsGrid({
           title="Feels Like"
           value={`${feelsLike}°`}
           subtitle={feelsLikeStatus}
+          extra={<MiniFeelsLikeChart actualTemp={actualTemp} feelsLike={feelsLike} />}
           onShowMore={() => setOpenDialog("feelslike")}
         />
 
@@ -136,6 +136,7 @@ export function MetricsGrid({
           title="Avg Temperature"
           value={`${Math.round((feelsLike + actualTemp) / 2)}°`}
           subtitle={`Range: ${actualTemp - 3}° – ${actualTemp + 3}°`}
+          extra={<MiniAvgTempChart actualTemp={actualTemp} feelsLike={feelsLike} daily={daily} />}
           onShowMore={() => setOpenDialog("avgtemp")}
         />
 
@@ -145,6 +146,7 @@ export function MetricsGrid({
           title="Rainfall"
           value={`${rainfall} mm`}
           subtitle={rainfall === 0 ? "No rainfall expected" : "in the last 24 hours"}
+          extra={<MiniRainfallChart rainfall={rainfall} />}
           onShowMore={() => setOpenDialog("rainfall")}
         />
 
@@ -154,21 +156,7 @@ export function MetricsGrid({
           title="Wind"
           value={`${windSpeed}`}
           subtitle={`km/h ${windDirection}`}
-          extra={
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center">
-                <div
-                  className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-b-[6px] border-b-indigo-400"
-                  style={{
-                    transform: `rotate(${
-                      { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 }[windDirection] || 0
-                    }deg)`,
-                  }}
-                />
-              </div>
-              <span className="text-[10px] text-white/30">{windDirection}</span>
-            </div>
-          }
+          extra={<MiniWindRadar windSpeed={windSpeed} windDirection={windDirection} />}
           onShowMore={() => setOpenDialog("wind")}
         />
 
@@ -178,14 +166,7 @@ export function MetricsGrid({
           title="Air Quality"
           value={`${aqi}`}
           subtitle={aqiStatus}
-          extra={
-            <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500 rounded-full"
-                style={{ width: `${aqiPct}%` }}
-              />
-            </div>
-          }
+          extra={<MiniAQIGauge aqi={aqi} />}
           onShowMore={() => setOpenDialog("aqi")}
         />
 
@@ -195,14 +176,7 @@ export function MetricsGrid({
           title="Humidity"
           value={`${humidity}%`}
           subtitle={humidityStatus}
-          extra={
-            <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
-                style={{ width: `${humidity}%` }}
-              />
-            </div>
-          }
+          extra={<MiniHumidityChart humidity={humidity} />}
           onShowMore={() => setOpenDialog("humidity")}
         />
       </div>

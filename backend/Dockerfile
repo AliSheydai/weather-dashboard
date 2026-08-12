@@ -36,4 +36,5 @@ EXPOSE 3001
 
 ENV PORT 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
+# Run migrations (via DIRECT_URL in prisma.config.ts) then start the app
+CMD ["npm", "run", "start:migrate"]
