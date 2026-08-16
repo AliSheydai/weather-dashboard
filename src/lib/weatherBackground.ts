@@ -1,15 +1,22 @@
-function getLocalTime(timezoneOffsetSeconds: number): Date {
-  const now = new Date();
-  const utcMs =
-    now.getTime() + now.getTimezoneOffset() * 60 * 1000;
-  return new Date(utcMs + timezoneOffsetSeconds * 1000);
+/**
+ * Returns the current local time in the city's timezone as a plain number
+ * representing "seconds since epoch in local time".
+ * We work entirely in UTC seconds to avoid Date locale issues.
+ */
+function getNowUtcSeconds(): number {
+  return Math.floor(Date.now() / 1000);
 }
 
-function unixToDate(
-  unixSeconds: number,
-  timezoneOffsetSeconds: number
-): Date {
-  return new Date((unixSeconds + timezoneOffsetSeconds) * 1000);
+/**
+ * Given a UTC unix timestamp and the city's timezone offset (in seconds),
+ * returns the local "hour decimal" (e.g. 14.5 = 14:30 local time).
+ */
+function utcSecondsToLocalHour(utcSeconds: number, timezoneOffsetSeconds: number): number {
+  const localSeconds = utcSeconds + timezoneOffsetSeconds;
+  const secondsInDay = localSeconds % 86400;
+  // secondsInDay can be negative if we cross midnight going backwards
+  const normalized = ((secondsInDay % 86400) + 86400) % 86400;
+  return normalized / 3600;
 }
 
 function getTimeOfDay(
@@ -17,14 +24,32 @@ function getTimeOfDay(
   sunsetTimestamp: number,
   timezone: number
 ): { isDay: boolean; isSunset: boolean } {
-  const now = getLocalTime(timezone);
-  const sunrise = unixToDate(sunriseTimestamp, timezone);
-  const sunset = unixToDate(sunsetTimestamp, timezone);
+  const nowUtc = getNowUtcSeconds();
 
-  const isDay = now >= sunrise && now < sunset;
+  // Convert everything to local hours for a simple, reliable comparison
+  const nowLocalHour = utcSecondsToLocalHour(nowUtc, timezone);
+  const sunriseLocalHour = utcSecondsToLocalHour(sunriseTimestamp, timezone);
+  const sunsetLocalHour = utcSecondsToLocalHour(sunsetTimestamp, timezone);
 
-  const sunsetWindowStart = new Date(sunset.getTime() - 30 * 60 * 1000);
-  const isSunset = isDay && now >= sunsetWindowStart && now < sunset;
+  // Guard: if sunrise/sunset timestamps are missing or invalid, fall back to
+  // a reasonable daytime window (6:00–20:00)
+  const useFallback =
+    !sunriseTimestamp ||
+    !sunsetTimestamp ||
+    sunriseTimestamp === 0 ||
+    sunsetTimestamp === 0 ||
+    sunriseLocalHour >= sunsetLocalHour;
+
+  const isDay = useFallback
+    ? nowLocalHour >= 6 && nowLocalHour < 20
+    : nowLocalHour >= sunriseLocalHour && nowLocalHour < sunsetLocalHour;
+
+  // Sunset window: 30 minutes before actual sunset, still during the day
+  const sunsetWindowStartHour = useFallback
+    ? 19.5
+    : sunsetLocalHour - 0.5;
+
+  const isSunset = isDay && nowLocalHour >= sunsetWindowStartHour;
 
   return { isDay, isSunset };
 }
@@ -34,9 +59,18 @@ function normalizeCondition(condition: string): string {
   if (c.includes("clear") || c.includes("sunny")) return "clear";
   if (c.includes("drizzle")) return "drizzle";
   if (c.includes("rain") || c.includes("shower")) return "rain";
-  if (c.includes("snow") || c.includes("sleet") || c.includes("ice")) return "snow";
-  if (c.includes("thunder")) return "thunder";
-  if (c.includes("cloud") || c.includes("overcast") || c.includes("mist") || c.includes("fog"))
+  if (c.includes("snow") || c.includes("sleet") || c.includes("ice") || c.includes("blizzard")) return "snow";
+  if (c.includes("thunder") || c.includes("storm")) return "thunder";
+  if (
+    c.includes("cloud") ||
+    c.includes("overcast") ||
+    c.includes("mist") ||
+    c.includes("fog") ||
+    c.includes("haze") ||
+    c.includes("smoke") ||
+    c.includes("dust") ||
+    c.includes("sand")
+  )
     return "clouds";
   return "clouds";
 }
@@ -47,7 +81,7 @@ const WEATHER_BACKGROUNDS: Record<
 > = {
   clear: {
     day: "/weather/sun.jpg",
-    night: "/weather/night-clouds.jpg",
+    night: "/weather/night-clouds.jpg", // no dedicated clear-night image; night-clouds is the closest
     sunset: "/weather/Sunset.jpg",
   },
   clouds: {
