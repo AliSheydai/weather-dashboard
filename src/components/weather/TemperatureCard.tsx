@@ -50,22 +50,22 @@ interface TemperatureCardProps {
   onHourSelect: (index: number | null) => void;
 }
 
-const getWeatherIcon = (condition: string, size: "sm" | "md" | "lg" = "md") => {
+const getWeatherIcon = (condition: string, size: "sm" | "md" | "lg" = "md", isDay: boolean = false) => {
   const dims = size === "sm" ? "h-4 w-4" : size === "md" ? "h-5 w-5" : "h-20 w-20";
   const c = condition.toLowerCase();
   if (c.includes("clear") || c.includes("sunny"))
-    return <Sun className={`${dims} text-amber-400`} />;
+    return <Sun className={`${dims} ${isDay ? "text-amber-600" : "text-amber-400"}`} />;
   if (c.includes("drizzle"))
-    return <CloudDrizzle className={`${dims} text-blue-400`} />;
+    return <CloudDrizzle className={`${dims} ${isDay ? "text-blue-600" : "text-blue-400"}`} />;
   if (c.includes("rain"))
-    return <CloudRain className={`${dims} text-blue-400`} />;
+    return <CloudRain className={`${dims} ${isDay ? "text-blue-600" : "text-blue-400"}`} />;
   if (c.includes("snow"))
-    return <CloudSnow className={`${dims} text-white`} />;
+    return <CloudSnow className={`${dims} ${isDay ? "text-slate-700" : "text-white"}`} />;
   if (c.includes("thunder"))
-    return <CloudLightning className={`${dims} text-purple-400`} />;
+    return <CloudLightning className={`${dims} ${isDay ? "text-purple-600" : "text-purple-400"}`} />;
   if (c.includes("cloud") || c.includes("overcast"))
-    return <Cloud className={`${dims} text-slate-400`} />;
-  return <Sun className={`${dims} text-amber-400`} />;
+    return <Cloud className={`${dims} ${isDay ? "text-slate-600" : "text-slate-400"}`} />;
+  return <Sun className={`${dims} ${isDay ? "text-amber-600" : "text-amber-400"}`} />;
 };
 
 export function TemperatureCard({
@@ -86,6 +86,7 @@ export function TemperatureCard({
     () => getWeatherBackground(condition, sunriseTimestamp, sunsetTimestamp, timezone),
     [condition, sunriseTimestamp, sunsetTimestamp, timezone]
   );
+  const isDay = background.isDay;
 
   useEffect(() => {
     const img = new Image();
@@ -177,23 +178,29 @@ export function TemperatureCard({
   };
 
   return (
-    <div className="relative h-full rounded-2xl overflow-hidden border border-white/[0.06] backdrop-blur-xl">
+    <div className={`relative h-full rounded-2xl overflow-hidden border backdrop-blur-xl transition-colors duration-300 ${
+      isDay ? "border-slate-900/10" : "border-white/[0.06]"
+    }`}>
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-[background-image] duration-300 ease-in-out"
         style={{ backgroundImage: `url(${background.image})` }}
       />
 
-      {/* Dark overlay for text readability */}
+      {/* Overlay for text readability */}
       <div
         className={`absolute inset-0 transition-opacity duration-300 ease-in-out ${
-          background.isDay ? "bg-black/25" : "bg-black/45"
+          isDay ? "bg-white/25 backdrop-brightness-105" : "bg-black/45"
         }`}
       />
 
       {/* Ambient glow */}
-      <div className="absolute -top-20 -right-20 w-80 h-80 bg-indigo-500/[0.07] rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/[0.05] rounded-full blur-[80px] pointer-events-none" />
+      <div className={`absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[100px] pointer-events-none ${
+        isDay ? "bg-amber-500/[0.12]" : "bg-indigo-500/[0.07]"
+      }`} />
+      <div className={`absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-[80px] pointer-events-none ${
+        isDay ? "bg-blue-500/[0.08]" : "bg-purple-500/[0.05]"
+      }`} />
 
       <div className="relative h-full flex flex-col p-5">
         {/* Temperature display */}
@@ -208,29 +215,39 @@ export function TemperatureCard({
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
               <div className="flex items-start gap-1">
-                <span className="text-[3rem] sm:text-[4rem] lg:text-[5rem] font-extralight text-white leading-none tracking-tighter">
+                <span className={`text-[3rem] sm:text-[4rem] lg:text-[5rem] font-light leading-none tracking-tighter ${
+                  isDay ? "text-slate-900 font-normal drop-shadow-sm" : "text-white font-extralight"
+                }`}>
                   {displayTemp}
                 </span>
-                <span className="text-xl font-extralight text-white/40 mt-2">
+                <span className={`text-xl font-light mt-2 ${
+                  isDay ? "text-slate-700 font-medium" : "text-white/40 font-extralight"
+                }`}>
                   °C
                 </span>
               </div>
               <div className="mt-1 flex items-center gap-3">
-                <span className="text-base text-white/80 font-light capitalize">
+                <span className={`text-base font-medium capitalize ${
+                  isDay ? "text-slate-800" : "text-white/80 font-light"
+                }`}>
                   {displayCondition}
                 </span>
               </div>
               {selectedDayIndex === 0 && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-white/40">
+                <div className={`mt-2 flex items-center gap-2 text-xs ${
+                  isDay ? "text-slate-700 font-medium" : "text-white/40"
+                }`}>
                   <span>Feels like {displayFeelsLike}°</span>
-                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span className={`w-1 h-1 rounded-full ${isDay ? "bg-slate-700/50" : "bg-white/20"}`} />
                   <span>
                     H:{todayTemp}° L:{daily[0]?.minTemp}°
                   </span>
                 </div>
               )}
               {selectedDayIndex !== 0 && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-white/40">
+                <div className={`mt-2 flex items-center gap-2 text-xs ${
+                  isDay ? "text-slate-700 font-medium" : "text-white/40"
+                }`}>
                   <span>
                     H:{selectedDay.maxTemp}° L:{selectedDay.minTemp}°
                   </span>
@@ -241,14 +258,18 @@ export function TemperatureCard({
         </div>
 
         {/* Hourly Forecast */}
-        <div className="border-t border-white/[0.06] pt-3">
+        <div className={`border-t pt-3 ${isDay ? "border-slate-900/10" : "border-white/[0.06]"}`}>
           <div className="flex items-center gap-1">
             <button
               onClick={handlePrevHour}
               disabled={
                 selectedHourIndex !== null && selectedHourIndex <= 0
               }
-              className="p-1 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
+              className={`p-1 rounded-lg transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0 ${
+                isDay
+                  ? "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.06]"
+              }`}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -269,19 +290,23 @@ export function TemperatureCard({
                       onClick={() => handleHourClick(realIndex)}
                       className={`flex flex-col items-center flex-1 min-w-0 py-1.5 px-1 rounded-xl transition-colors cursor-pointer ${
                         isActive
-                          ? "bg-white/[0.08]"
-                          : "hover:bg-white/[0.04]"
+                          ? isDay ? "bg-black/[0.08]" : "bg-white/[0.08]"
+                          : isDay ? "hover:bg-black/[0.04]" : "hover:bg-white/[0.04]"
                       }`}
                     >
                       <span
                         className={`text-[10px] font-medium mb-1 ${
-                          isActive ? "text-indigo-400" : "text-white/30"
+                          isActive
+                            ? isDay ? "text-indigo-600 font-bold" : "text-indigo-400"
+                            : isDay ? "text-slate-600 font-medium" : "text-white/30"
                         }`}
                       >
                         {isFirst ? "Now" : h.hour}
                       </span>
-                      {getWeatherIcon(h.condition, "sm")}
-                      <span className="text-[11px] font-semibold text-white/80 mt-1">
+                      {getWeatherIcon(h.condition, "sm", isDay)}
+                      <span className={`text-[11px] font-semibold mt-1 ${
+                        isDay ? "text-slate-900" : "text-white/80"
+                      }`}>
                         {h.temperature}°
                       </span>
                     </motion.button>
@@ -295,7 +320,11 @@ export function TemperatureCard({
                 selectedHourIndex !== null &&
                 selectedHourIndex >= maxHourIndex
               }
-              className="p-1 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
+              className={`p-1 rounded-lg transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0 ${
+                isDay
+                  ? "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.06]"
+              }`}
             >
               <ChevronRight className="h-5 w-5" />
             </button>
