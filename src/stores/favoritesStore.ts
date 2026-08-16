@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiFetch } from "@/lib/apiConfig";
 
 interface Favorite {
   id: string;
@@ -15,8 +16,6 @@ interface FavoritesState {
   removeFavorite: (token: string, id: string) => Promise<void>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   favorites: [],
   isLoading: false,
@@ -25,7 +24,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   fetchFavorites: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/favorites`, {
+      const response = await apiFetch("/favorites", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -39,7 +38,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
 
   addFavorite: async (token: string, city: string) => {
     try {
-      const response = await fetch(`${API_URL}/favorites`, {
+      const response = await apiFetch("/favorites", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,7 +57,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
 
   removeFavorite: async (token: string, id: string) => {
     try {
-      const response = await fetch(`${API_URL}/favorites/${id}`, {
+      const response = await apiFetch(`/favorites/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

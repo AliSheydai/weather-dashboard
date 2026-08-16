@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiFetch } from "@/lib/apiConfig";
 
 interface CurrentWeather {
   city: string;
@@ -59,8 +60,6 @@ interface WeatherState {
   fetchAllWeather: (city: string, token?: string) => Promise<void>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 export const useWeatherStore = create<WeatherState>((set) => ({
   selectedCity: "New York",
   current: null,
@@ -86,9 +85,9 @@ export const useWeatherStore = create<WeatherState>((set) => ({
       }
 
       const [weatherRes, hourlyRes, dailyRes] = await Promise.all([
-        fetch(`${API_URL}/weather/current?city=${encodeURIComponent(city)}`, { headers }),
-        fetch(`${API_URL}/weather/hourly?city=${encodeURIComponent(city)}`),
-        fetch(`${API_URL}/weather/forecast?city=${encodeURIComponent(city)}`),
+        apiFetch(`/weather/current?city=${encodeURIComponent(city)}`, { headers }),
+        apiFetch(`/weather/hourly?city=${encodeURIComponent(city)}`),
+        apiFetch(`/weather/forecast?city=${encodeURIComponent(city)}`),
       ]);
 
       if (!weatherRes.ok) {

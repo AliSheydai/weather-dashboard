@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiFetch } from "@/lib/apiConfig";
 
 export interface Notification {
   id: string;
@@ -24,7 +25,6 @@ interface NotificationState {
   reset: () => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const CACHE_DURATION = 60 * 1000; // 60 seconds
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -46,7 +46,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/notifications`, {
+      const response = await apiFetch("/notifications", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -74,7 +74,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   fetchUnreadCount: async (token: string) => {
     try {
-      const response = await fetch(`${API_URL}/notifications/unread-count`, {
+      const response = await apiFetch("/notifications/unread-count", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -100,7 +100,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     });
 
     try {
-      const response = await fetch(`${API_URL}/notifications/${id}/read`, {
+      const response = await apiFetch(`/notifications/${id}/read`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -125,7 +125,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     });
 
     try {
-      const response = await fetch(`${API_URL}/notifications/read-all`, {
+      const response = await apiFetch("/notifications/read-all", {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -148,7 +148,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     });
 
     try {
-      const response = await fetch(`${API_URL}/notifications/${id}`, {
+      const response = await apiFetch(`/notifications/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

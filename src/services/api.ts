@@ -1,7 +1,7 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { apiFetch } from "@/lib/apiConfig";
 
 export async function fetchHealth(): Promise<{ status: string }> {
-  const response = await fetch(`${API_BASE_URL}/health`);
+  const response = await apiFetch("/health");
   if (!response.ok) {
     throw new Error("Failed to fetch health status");
   }
@@ -9,8 +9,8 @@ export async function fetchHealth(): Promise<{ status: string }> {
 }
 
 export async function fetchWeather(city: string) {
-  const response = await fetch(
-    `${API_BASE_URL}/weather/current?city=${encodeURIComponent(city)}`
+  const response = await apiFetch(
+    `/weather/current?city=${encodeURIComponent(city)}`
   );
   if (!response.ok) {
     throw new Error("Failed to fetch weather data");

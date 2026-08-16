@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiFetch } from "@/lib/apiConfig";
 
 interface HistoryItem {
   id: string;
@@ -14,8 +15,6 @@ interface HistoryState {
   clearHistory: (token: string) => Promise<void>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 export const useHistoryStore = create<HistoryState>((set) => ({
   history: [],
   isLoading: false,
@@ -24,7 +23,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
   fetchHistory: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/history`, {
+      const response = await apiFetch("/history", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -40,7 +39,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
   clearHistory: async (token: string) => {
     try {
-      const response = await fetch(`${API_URL}/history`, {
+      const response = await apiFetch("/history", {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

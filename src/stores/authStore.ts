@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { User } from "@/types/user";
+import { apiFetch } from "@/lib/apiConfig";
 
 interface AuthState {
   user: User | null;
@@ -12,8 +13,6 @@ interface AuthState {
   fetchProfile: () => Promise<void>;
   initialize: () => Promise<void>;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -32,7 +31,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await apiFetch("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -53,7 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   register: async (email: string, password: string, name?: string) => {
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const response = await apiFetch("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, name }),
@@ -90,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      const response = await fetch(`${API_URL}/users/me`, {
+      const response = await apiFetch("/users/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

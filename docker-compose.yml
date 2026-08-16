@@ -39,12 +39,12 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3001
+        NEXT_PUBLIC_API_URL: https://weather-dashboard-n85b.vercel.app
     container_name: weather-frontend
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: https://weather-dashboard-n85b.vercel.app
     depends_on:
       - backend
 
