@@ -15,7 +15,7 @@ export default function LoginPage() {
   useEffect(() => {
     initialize().then(() => {
       if (useAuthStore.getState().isAuthenticated) {
-        router.push("/");
+        router.replace("/dashboard");
       }
     });
   }, [initialize, router]);
@@ -37,7 +37,7 @@ export default function LoginPage() {
       } else {
         await register(email, password, name || undefined);
       }
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

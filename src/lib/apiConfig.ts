@@ -49,6 +49,7 @@ async function checkHealth(baseUrl: string, timeoutMs = 2500): Promise<boolean> 
       method: "GET",
       signal: controller.signal,
       headers: { Accept: "application/json" },
+      credentials: "include",
     });
     
     clearTimeout(timeoutId);
@@ -98,21 +99,29 @@ export function getApiUrlSync(): string {
 
 /**
  * Wrapper for fetch that uses the active working API URL.
+ * Always sends credentials (cookies) so the HttpOnly auth_token cookie
+ * is included in every request — this is how cookie-based auth works.
  * Automatically tries fallback candidate URLs if a network failure occurs.
  */
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const activeUrl = await getApiUrl();
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
+  // Always include credentials so the browser sends the auth_token cookie
+  const requestInit: RequestInit = {
+    ...init,
+    credentials: "include",
+  };
+
   try {
-    return await fetch(`${activeUrl}${cleanPath}`, init);
+    return await fetch(`${activeUrl}${cleanPath}`, requestInit);
   } catch (error) {
     // If request failed due to connection/network error, try fallback candidate URLs
     if (error instanceof TypeError || (error as Error)?.name === "AbortError") {
       for (const fallbackUrl of CANDIDATE_URLS) {
         if (fallbackUrl === activeUrl) continue;
         try {
-          const fallbackRes = await fetch(`${fallbackUrl}${cleanPath}`, init);
+          const fallbackRes = await fetch(`${fallbackUrl}${cleanPath}`, requestInit);
           // If fallback URL responds, update working URL for future requests
           currentWorkingUrl = fallbackUrl;
           return fallbackRes;
@@ -124,3 +133,4 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     throw error;
   }
 }
+

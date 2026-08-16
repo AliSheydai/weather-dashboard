@@ -72,20 +72,17 @@ export const useWeatherStore = create<WeatherState>((set) => ({
     set({ selectedCity: city });
   },
 
-  fetchAllWeather: async (city: string, token?: string) => {
+  fetchAllWeather: async (city: string, _token?: string) => {
     set({ isLoading: true, error: null });
     try {
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         throw new Error("You are offline. Please check your internet connection.");
       }
 
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      // auth_token HttpOnly cookie sent automatically via credentials:"include"
+      // OptionalJwtAuthGuard on /weather/current logs search history if authenticated
       const [weatherRes, hourlyRes, dailyRes] = await Promise.all([
-        apiFetch(`/weather/current?city=${encodeURIComponent(city)}`, { headers }),
+        apiFetch(`/weather/current?city=${encodeURIComponent(city)}`),
         apiFetch(`/weather/hourly?city=${encodeURIComponent(city)}`),
         apiFetch(`/weather/forecast?city=${encodeURIComponent(city)}`),
       ]);

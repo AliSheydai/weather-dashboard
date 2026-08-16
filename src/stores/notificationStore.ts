@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { apiFetch } from "@/lib/apiConfig";
 
 export interface Notification {
@@ -17,11 +17,12 @@ interface NotificationState {
   error: string | null;
   hasFetched: boolean;
   lastFetchTime: number;
-  fetchNotifications: (token: string) => Promise<void>;
-  fetchUnreadCount: (token: string) => Promise<void>;
-  markAsRead: (token: string, id: string) => Promise<void>;
-  markAllAsRead: (token: string) => Promise<void>;
-  deleteNotification: (token: string, id: string) => Promise<void>;
+  // token params kept for call-site compatibility — cookie is sent automatically
+  fetchNotifications: (token?: string) => Promise<void>;
+  fetchUnreadCount: (token?: string) => Promise<void>;
+  markAsRead: (token: string | undefined, id: string) => Promise<void>;
+  markAllAsRead: (token?: string) => Promise<void>;
+  deleteNotification: (token: string | undefined, id: string) => Promise<void>;
   reset: () => void;
 }
 
@@ -35,7 +36,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   hasFetched: false,
   lastFetchTime: 0,
 
-  fetchNotifications: async (token: string) => {
+  fetchNotifications: async (_token?: string) => {
     const { lastFetchTime, hasFetched } = get();
     const now = Date.now();
 
@@ -46,9 +47,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const response = await apiFetch("/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // auth_token HttpOnly cookie is sent automatically via credentials:"include"
+      const response = await apiFetch("/notifications");
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
@@ -72,11 +72,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
-  fetchUnreadCount: async (token: string) => {
+  fetchUnreadCount: async (_token?: string) => {
     try {
-      const response = await apiFetch("/notifications/unread-count", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiFetch("/notifications/unread-count");
 
       if (!response.ok) return;
 
@@ -87,7 +85,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
-  markAsRead: async (token: string, id: string) => {
+  markAsRead: async (_token: string | undefined, id: string) => {
     // Optimistic update
     const prevItems = get().items;
     const prevCount = get().unreadCount;
@@ -102,7 +100,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       const response = await apiFetch(`/notifications/${id}/read`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -114,7 +111,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
-  markAllAsRead: async (token: string) => {
+  markAllAsRead: async (_token?: string) => {
     // Optimistic update
     const prevItems = get().items;
     const prevCount = get().unreadCount;
@@ -127,7 +124,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       const response = await apiFetch("/notifications/read-all", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -138,7 +134,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
-  deleteNotification: async (token: string, id: string) => {
+  deleteNotification: async (_token: string | undefined, id: string) => {
     const prevItems = get().items;
     const deletedItem = prevItems.find((n) => n.id === id);
 
@@ -150,7 +146,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       const response = await apiFetch(`/notifications/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {

@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { apiFetch } from "@/lib/apiConfig";
 
 interface HistoryItem {
@@ -11,8 +11,9 @@ interface HistoryState {
   history: HistoryItem[];
   isLoading: boolean;
   error: string | null;
-  fetchHistory: (token: string) => Promise<void>;
-  clearHistory: (token: string) => Promise<void>;
+  // token params kept for call-site compatibility — cookie is sent automatically
+  fetchHistory: (token?: string) => Promise<void>;
+  clearHistory: (token?: string) => Promise<void>;
 }
 
 export const useHistoryStore = create<HistoryState>((set) => ({
@@ -20,12 +21,11 @@ export const useHistoryStore = create<HistoryState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchHistory: async (token: string) => {
+  fetchHistory: async (_token?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiFetch("/history", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // auth_token HttpOnly cookie is sent automatically via credentials:"include"
+      const response = await apiFetch("/history");
       if (response.ok) {
         const history = await response.json();
         set({ history, isLoading: false });
@@ -37,11 +37,10 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     }
   },
 
-  clearHistory: async (token: string) => {
+  clearHistory: async (_token?: string) => {
     try {
       const response = await apiFetch("/history", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         set({ history: [], error: null });

@@ -1,6 +1,22 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { User } from "@/types/user";
 import { apiFetch } from "@/lib/apiConfig";
+
+function getAuthCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|; )auth_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setAuthCookie(token: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+}
+
+function removeAuthCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = "auth_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+}
 
 interface AuthState {
   user: User | null;
@@ -9,7 +25,7 @@ interface AuthState {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   initialize: () => Promise<void>;
 }
@@ -20,14 +36,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
 
+  /**
+   * Initializes auth state on app start.
+   * Checks local storage and cookies first to prevent 401 network errors
+   * when the user is not logged in.
+   */
   initialize: async () => {
     if (typeof window === "undefined") return;
-    const storedToken = localStorage.getItem("auth_token");
-    if (storedToken) {
-      set({ token: storedToken });
-      await get().fetchProfile();
+
+    const storedToken = localStorage.getItem("auth_token") || getAuthCookie();
+    if (!storedToken) {
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+      return;
     }
-    set({ isLoading: false });
+
+    setAuthCookie(storedToken);
+    set({ token: storedToken });
+    await get().fetchProfile();
   },
 
   login: async (email: string, password: string) => {
@@ -43,11 +68,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const data = await response.json();
-    localStorage.setItem("auth_token", data.access_token);
+    const token = data.access_token;
+    if (token) {
+      localStorage.setItem("auth_token", token);
+      setAuthCookie(token);
+    }
     set({
-      token: data.access_token,
+      token: token || null,
       user: data.user,
       isAuthenticated: true,
+      isLoading: false,
     });
   },
 
@@ -64,27 +94,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const data = await response.json();
-    localStorage.setItem("auth_token", data.access_token);
+    const token = data.access_token;
+    if (token) {
+      localStorage.setItem("auth_token", token);
+      setAuthCookie(token);
+    }
     set({
-      token: data.access_token,
+      token: token || null,
       user: data.user,
       isAuthenticated: true,
+      isLoading: false,
     });
   },
 
-  logout: () => {
+  logout: async () => {
     localStorage.removeItem("auth_token");
+    removeAuthCookie();
+    await apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
     set({
       user: null,
       token: null,
       isAuthenticated: false,
+      isLoading: false,
     });
   },
 
   fetchProfile: async () => {
-    const { token } = get();
+    const token = get().token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") || getAuthCookie() : null);
     if (!token) {
-      set({ isLoading: false });
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
       return;
     }
 
@@ -100,6 +138,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user, isAuthenticated: true, isLoading: false });
       } else {
         localStorage.removeItem("auth_token");
+        removeAuthCookie();
         set({ user: null, token: null, isAuthenticated: false, isLoading: false });
       }
     } catch {
