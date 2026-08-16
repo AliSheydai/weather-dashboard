@@ -4,8 +4,8 @@ import { Search, Bell, Loader2, Clock, TrendingUp } from "lucide-react";
 import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSidebarStore } from "@/stores/sidebarStore";
 import { NotificationBell } from "@/components/header/NotificationBell";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const POPULAR_CITIES = [
   "New York", "London", "Tokyo", "Paris", "Berlin", "Sydney", "Dubai",
@@ -140,6 +140,9 @@ export function DashboardHeader({
 
   return (
     <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-white/[0.02] backdrop-blur-xl">
+      {/* Mobile Sidebar Trigger */}
+      <SidebarTrigger className="md:hidden mr-2 shrink-0 -ml-1 text-white/40 hover:text-white/70" />
+
       {/* Location */}
       <div className="hidden sm:flex items-center gap-2 min-w-[120px]">
         <span className="text-xs text-white/25 uppercase tracking-widest font-medium">
