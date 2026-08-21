@@ -20,12 +20,17 @@ import {
   Thermometer,
   CloudDrizzle,
   Leaf,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 
 import { NavUser } from "@/components/sidebar/nav-user";
 import { useWeatherStore } from "@/stores/weatherStore";
 import { useCityModalStore } from "@/stores/cityModalStore";
+import { useAuthStore } from "@/stores/authStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -73,12 +78,53 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const weather = useWeatherStore((s) => s.current);
   const selectedCity = useWeatherStore((s) => s.selectedCity);
   const fetchAllWeather = useWeatherStore((s) => s.fetchAllWeather);
+  const isStoreLoading = useWeatherStore((s) => s.isLoading);
   const openCityModal = useCityModalStore((s) => s.openModal);
+  const token = useAuthStore((s) => s.token);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const fetchHistory = useHistoryStore((s) => s.fetchHistory);
   const { unit, convert } = useTemperatureUnit();
 
-  const handleRefresh = () => {
-    fetchAllWeather(selectedCity || weather?.city || "New York");
-  };
+  const [refreshState, setRefreshState] = React.useState<"idle" | "refreshing" | "success" | "error">("idle");
+  const [refreshError, setRefreshError] = React.useState<string | null>(null);
+
+  const isRefreshing = refreshState === "refreshing" || isStoreLoading;
+
+  const handleRefresh = React.useCallback(async () => {
+    if (isRefreshing) return;
+
+    const cityToFetch = selectedCity || weather?.city || "New York";
+    setRefreshState("refreshing");
+    setRefreshError(null);
+
+    try {
+      await fetchAllWeather(cityToFetch, token || undefined);
+      const currentError = useWeatherStore.getState().error;
+      if (currentError) {
+        setRefreshState("error");
+        setRefreshError(currentError);
+        setTimeout(() => {
+          setRefreshState("idle");
+          setRefreshError(null);
+        }, 3000);
+      } else {
+        if (isAuthenticated && token) {
+          fetchHistory(token);
+        }
+        setRefreshState("success");
+        setTimeout(() => {
+          setRefreshState("idle");
+        }, 2000);
+      }
+    } catch (err: unknown) {
+      setRefreshState("error");
+      setRefreshError(err instanceof Error ? err.message : "Failed to refresh weather");
+      setTimeout(() => {
+        setRefreshState("idle");
+        setRefreshError(null);
+      }, 3000);
+    }
+  }, [isRefreshing, selectedCity, weather?.city, fetchAllWeather, token, isAuthenticated, fetchHistory]);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -170,9 +216,58 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Refresh Weather" onClick={handleRefresh}>
-                <RefreshCw />
-                <span>Refresh Weather</span>
+              <SidebarMenuButton
+                tooltip={
+                  refreshState === "refreshing"
+                    ? "Refreshing weather..."
+                    : refreshState === "success"
+                    ? "Weather updated!"
+                    : refreshState === "error"
+                    ? refreshError || "Failed to refresh"
+                    : "Refresh Weather"
+                }
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh Weather"
+                aria-busy={isRefreshing}
+                className={cn(
+                  "transition-all duration-200",
+                  refreshState === "success" && "text-emerald-400 hover:text-emerald-300",
+                  refreshState === "error" && "text-rose-400 hover:text-rose-300",
+                  isRefreshing && "opacity-80 cursor-not-allowed"
+                )}
+              >
+                {refreshState === "success" ? (
+                  <Check className="size-4 text-emerald-400 animate-in fade-in zoom-in duration-200" />
+                ) : refreshState === "error" ? (
+                  <AlertCircle className="size-4 text-rose-400 animate-in fade-in zoom-in duration-200" />
+                ) : (
+                  <RefreshCw
+                    className={cn(
+                      "size-4 transition-transform duration-300",
+                      isRefreshing && "animate-spin text-indigo-400"
+                    )}
+                  />
+                )}
+                <span>
+                  {refreshState === "refreshing"
+                    ? "Refreshing..."
+                    : refreshState === "success"
+                    ? "Updated!"
+                    : refreshState === "error"
+                    ? "Failed"
+                    : "Refresh Weather"}
+                </span>
+                {refreshState === "success" && (
+                  <span className="ml-auto text-[10px] font-medium text-emerald-400/90 group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">
+                    Done
+                  </span>
+                )}
+                {refreshState === "error" && (
+                  <span className="ml-auto text-[10px] font-medium text-rose-400/90 group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">
+                    Retry
+                  </span>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
