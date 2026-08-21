@@ -9,12 +9,8 @@ function cleanUrl(url: string): string {
 }
 
 /**
- * List of candidate API base URLs in priority order.
- *
- * - In local/dev mode: ONLY try localhost:3001 (or NEXT_PUBLIC_API_URL if set).
- *   We intentionally do NOT fall back to the remote Vercel URL in dev, because
- *   that deployed instance may be running older code without the new endpoints.
- * - In production: use NEXT_PUBLIC_API_URL or the remote URL.
+ * List of candidate API base URLs.
+ * Always points to the deployed backend on Vercel: https://weather-dashboard-n85b.vercel.app
  */
 function getCandidateUrls(): string[] {
   const envUrl = process.env.NEXT_PUBLIC_API_URL
@@ -25,16 +21,17 @@ function getCandidateUrls(): string[] {
     return [envUrl];
   }
 
-  const isLocalDev =
-    (typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1")) ||
-    process.env.NODE_ENV === "development";
+  // const isLocalDev =
+  //   (typeof window !== "undefined" &&
+  //     (window.location.hostname === "localhost" ||
+  //       window.location.hostname === "127.0.0.1")) ||
+  //   process.env.NODE_ENV === "development";
 
-  if (isLocalDev) {
-    // Only use local backend — never silently fallback to old deployed code
-    return [cleanUrl(DEFAULT_LOCAL_URL)];
-  }
+  // if (isLocalDev) {
+  //   // Only use local backend — never silently fallback to old deployed code
+  //   return [cleanUrl(DEFAULT_LOCAL_URL)];
+  // }
+
 
   return [cleanUrl(DEFAULT_REMOTE_URL)];
 }
@@ -52,14 +49,14 @@ async function checkHealth(baseUrl: string, timeoutMs = 2500): Promise<boolean> 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     const res = await fetch(`${baseUrl}/health`, {
       method: "GET",
       signal: controller.signal,
       headers: { Accept: "application/json" },
       credentials: "include",
     });
-    
+
     clearTimeout(timeoutId);
     return res.ok || res.status < 500;
   } catch {
