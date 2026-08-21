@@ -1,14 +1,29 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WeatherService } from '../weather/weather.service';
 
 @Injectable()
 export class FavoritesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private weatherService: WeatherService,
+  ) {}
 
   async addFavorite(userId: string, city: string) {
-    const existing = await this.prisma.favoriteCity.findUnique({
+    const trimmedCity = city.trim();
+
+    // Validate that city exists using WeatherService
+    const weather = await this.weatherService.getCurrentWeather(trimmedCity);
+    const resolvedCity = weather.city || trimmedCity;
+
+    // Check if city is already in favorites
+    const existing = await this.prisma.favoriteCity.findFirst({
       where: {
-        userId_city: { userId, city },
+        userId,
+        city: {
+          equals: resolvedCity,
+          mode: 'insensitive',
+        },
       },
     });
 
@@ -17,7 +32,7 @@ export class FavoritesService {
     }
 
     return this.prisma.favoriteCity.create({
-      data: { userId, city },
+      data: { userId, city: resolvedCity },
     });
   }
 

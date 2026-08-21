@@ -32,6 +32,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { useSidebarStore } from "@/stores/sidebarStore";
+import { useCityModalStore } from "@/stores/cityModalStore";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Types
@@ -422,7 +423,11 @@ export function PremiumSidebar({
           </AnimatePresence>
           <div className={`flex ${isOpen ? "gap-1.5 px-1" : "flex-col gap-1"}`}>
             {[
-              { icon: Plus, label: "Add City", action: () => {} },
+              {
+                icon: Plus,
+                label: "Add City",
+                action: () => useCityModalStore.getState().openModal(),
+              },
               {
                 icon: LocateFixed,
                 label: "Location",

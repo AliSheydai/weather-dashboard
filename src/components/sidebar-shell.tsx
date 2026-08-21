@@ -3,6 +3,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ProfileModal } from "@/components/user/ProfileModal";
+import { AddCityModal } from "@/components/weather/AddCityModal";
 
 interface SidebarShellProps {
   children: React.ReactNode;
@@ -36,6 +37,9 @@ export function SidebarShell({ children, header }: SidebarShellProps) {
 
       {/* Profile Management Modal */}
       <ProfileModal />
+
+      {/* Add City & Quick Action Management Modal */}
+      <AddCityModal />
     </SidebarProvider>
   );
 }

@@ -14,6 +14,7 @@ import {
   Search,
   Sparkles,
   AlertCircle,
+  CheckCircle2,
   Clock,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
@@ -21,6 +22,7 @@ import { useProfileModalStore, ProfileTab } from "@/stores/profileModalStore";
 import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useWeatherStore } from "@/stores/weatherStore";
+import { apiFetch } from "@/lib/apiConfig";
 
 const POPULAR_CITIES = [
   "New York",
@@ -68,6 +70,7 @@ export function ProfileModal() {
   const [citySearch, setCitySearch] = useState("");
   const [isAddingCity, setIsAddingCity] = useState(false);
   const [cityError, setCityError] = useState<string | null>(null);
+  const [citySuccess, setCitySuccess] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -83,6 +86,7 @@ export function ProfileModal() {
       setNameSuccess(false);
       setNameError(null);
       setCityError(null);
+      setCitySuccess(null);
       setCitySearch("");
 
       if (isAuthenticated && token) {
@@ -160,10 +164,13 @@ export function ProfileModal() {
     }
   };
 
-  // Add new favorite city
+  // Add new favorite city with weather API validation
   const handleAddCity = async (cityNameToAdd?: string) => {
     const targetCity = (cityNameToAdd || citySearch).trim();
-    if (!targetCity) return;
+    if (!targetCity) {
+      setCityError("Please enter a city name");
+      return;
+    }
 
     // Check if already in favorites
     const exists = favorites.some(
@@ -176,10 +183,24 @@ export function ProfileModal() {
 
     setIsAddingCity(true);
     setCityError(null);
+    setCitySuccess(null);
     try {
-      await addFavorite(token || undefined, targetCity);
+      // Validate existence via weather API
+      const res = await apiFetch(`/weather/current?city=${encodeURIComponent(targetCity)}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error(`City "${targetCity}" not found. Please check the spelling.`);
+        }
+        throw new Error("Failed to validate city. Please try again.");
+      }
+      const data = await res.json();
+      const verifiedCity = data.city || targetCity;
+
+      await addFavorite(token || undefined, verifiedCity);
       setCitySearch("");
       setIsSearchOpen(false);
+      setCitySuccess(`"${verifiedCity}" added to saved cities!`);
+      setTimeout(() => setCitySuccess(null), 3500);
     } catch (err: any) {
       setCityError(err.message || "Failed to add city");
     } finally {
@@ -637,6 +658,14 @@ export function ProfileModal() {
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>{cityError}</span>
+                  </div>
+                )}
+
+                {/* Success Banner */}
+                {citySuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>{citySuccess}</span>
                   </div>
                 )}
 

@@ -24,6 +24,7 @@ import {
 
 import { NavUser } from "@/components/sidebar/nav-user";
 import { useWeatherStore } from "@/stores/weatherStore";
+import { useCityModalStore } from "@/stores/cityModalStore";
 import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 import {
   Sidebar,
@@ -70,7 +71,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { open, toggleSidebar } = useSidebar();
   const [activeNav, setActiveNav] = React.useState("Dashboard");
   const weather = useWeatherStore((s) => s.current);
+  const selectedCity = useWeatherStore((s) => s.selectedCity);
+  const fetchAllWeather = useWeatherStore((s) => s.fetchAllWeather);
+  const openCityModal = useCityModalStore((s) => s.openModal);
   const { unit, convert } = useTemperatureUnit();
+
+  const handleRefresh = () => {
+    fetchAllWeather(selectedCity || weather?.city || "New York");
+  };
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -129,19 +137,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Add City">
+              <SidebarMenuButton tooltip="Add City" onClick={openCityModal}>
                 <Plus />
                 <span>Add City</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Use Current Location">
+              <SidebarMenuButton
+                tooltip="Use Current Location"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      async (pos) => {
+                        try {
+                          const res = await fetch(
+                            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`
+                          );
+                          const data = await res.json();
+                          const city = data.city || data.locality || "New York";
+                          fetchAllWeather(city);
+                        } catch {
+                          handleRefresh();
+                        }
+                      },
+                      () => handleRefresh()
+                    );
+                  }
+                }}
+              >
                 <LocateFixed />
                 <span>Use Current Location</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Refresh Weather">
+              <SidebarMenuButton tooltip="Refresh Weather" onClick={handleRefresh}>
                 <RefreshCw />
                 <span>Refresh Weather</span>
               </SidebarMenuButton>
