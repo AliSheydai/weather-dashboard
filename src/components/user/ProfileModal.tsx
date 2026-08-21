@@ -587,7 +587,7 @@ export function ProfileModal() {
                 <div ref={searchContainerRef} className="relative">
                   <div className="flex gap-2">
                     <div className="relative flex-1 group">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 group-focus-within:text-indigo-400 transition-colors" />
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 group-focus-within:text-indigo-400 transition-colors pointer-events-none" />
                       <input
                         ref={searchInputRef}
                         type="text"
@@ -605,8 +605,23 @@ export function ProfileModal() {
                           }
                         }}
                         placeholder="Search city to add (e.g. Paris, Tokyo)..."
-                        className="w-full h-10 pl-10 pr-4 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                        disabled={isAddingCity}
+                        className="w-full h-10 pl-10 pr-9 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 transition-all"
                       />
+                      {citySearch && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCitySearch("");
+                            setCityError(null);
+                            searchInputRef.current?.focus();
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/70 transition-colors"
+                          aria-label="Clear search"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -615,11 +630,16 @@ export function ProfileModal() {
                       className="px-4 h-10 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 disabled:opacity-40 disabled:pointer-events-none shrink-0"
                     >
                       {isAddingCity ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Validating...</span>
+                        </>
                       ) : (
-                        <Plus className="h-3.5 w-3.5" />
+                        <>
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Add</span>
+                        </>
                       )}
-                      <span>Add</span>
                     </button>
                   </div>
 
