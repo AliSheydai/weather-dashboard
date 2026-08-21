@@ -104,18 +104,37 @@ export function getApiUrlSync(): string {
 
 /**
  * Wrapper for fetch that uses the active working API URL.
- * Always sends credentials (cookies) so the HttpOnly auth_token cookie
- * is included in every request — this is how cookie-based auth works.
+ * Always sends credentials (cookies) and attaches Authorization: Bearer <token>
+ * if an auth token is stored in localStorage or document cookies.
  * Automatically tries fallback candidate URLs if a network failure occurs.
  */
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const activeUrl = await getApiUrl();
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
-  // Always include credentials so the browser sends the auth_token cookie
+  // Retrieve stored token if available to ensure cross-origin auth works
+  let token: string | null = null;
+  if (typeof window !== "undefined") {
+    token = localStorage.getItem("auth_token");
+    if (!token && typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|; )auth_token=([^;]*)/);
+      token = match ? decodeURIComponent(match[1]) : null;
+    }
+  }
+
+  const existingHeaders = (init?.headers as Record<string, string>) || {};
+  const authHeader: Record<string, string> =
+    token && !existingHeaders["Authorization"] && !existingHeaders["authorization"]
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+
   const requestInit: RequestInit = {
     ...init,
     credentials: "include",
+    headers: {
+      ...authHeader,
+      ...init?.headers,
+    },
   };
 
   try {

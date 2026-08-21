@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { apiFetch } from "@/lib/apiConfig";
 
 interface HistoryItem {
@@ -11,9 +11,17 @@ interface HistoryState {
   history: HistoryItem[];
   isLoading: boolean;
   error: string | null;
-  // token params kept for call-site compatibility — cookie is sent automatically
   fetchHistory: (token?: string) => Promise<void>;
   clearHistory: (token?: string) => Promise<void>;
+}
+
+function getAuthHeader(token?: string): Record<string, string> {
+  const effectiveToken =
+    token ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("auth_token")
+      : null);
+  return effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {};
 }
 
 export const useHistoryStore = create<HistoryState>((set) => ({
@@ -21,14 +29,14 @@ export const useHistoryStore = create<HistoryState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchHistory: async (_token?: string) => {
+  fetchHistory: async (token?: string) => {
     set({ isLoading: true, error: null });
     try {
-      // auth_token HttpOnly cookie is sent automatically via credentials:"include"
-      const response = await apiFetch("/history");
+      const headers = getAuthHeader(token);
+      const response = await apiFetch("/history", { headers });
       if (response.ok) {
         const history = await response.json();
-        set({ history, isLoading: false });
+        set({ history: Array.isArray(history) ? history : [], isLoading: false });
       } else {
         set({ isLoading: false });
       }
@@ -37,10 +45,12 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     }
   },
 
-  clearHistory: async (_token?: string) => {
+  clearHistory: async (token?: string) => {
     try {
+      const headers = getAuthHeader(token);
       const response = await apiFetch("/history", {
         method: "DELETE",
+        headers,
       });
       if (response.ok) {
         set({ history: [], error: null });
