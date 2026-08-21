@@ -20,12 +20,23 @@ function getCandidateUrls(): string[] {
 
   const candidates: string[] = [];
 
-  if (envUrl && envUrl !== DEFAULT_SECONDARY_URL) {
+  if (envUrl) {
     candidates.push(envUrl);
   }
 
-  candidates.push(cleanUrl(DEFAULT_PRIMARY_URL));
-  candidates.push(cleanUrl(DEFAULT_SECONDARY_URL));
+  const isLocalDev =
+    (typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1")) ||
+    process.env.NODE_ENV === "development";
+
+  if (isLocalDev) {
+    candidates.push(cleanUrl(DEFAULT_SECONDARY_URL));
+    candidates.push(cleanUrl(DEFAULT_PRIMARY_URL));
+  } else {
+    candidates.push(cleanUrl(DEFAULT_PRIMARY_URL));
+    candidates.push(cleanUrl(DEFAULT_SECONDARY_URL));
+  }
 
   // Deduplicate while preserving priority order
   return Array.from(new Set(candidates));

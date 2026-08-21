@@ -1,7 +1,7 @@
-"use client";
-
-import { User, LogOut, Settings, ChevronDown } from "lucide-react";
+import { User, LogOut, Settings, ChevronDown, Thermometer } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
+import { motion } from "framer-motion";
 
 interface UserProfileProps {
   name: string;
@@ -20,6 +20,7 @@ export function UserProfile({
 }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { unit, setUnit } = useTemperatureUnit();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -77,23 +78,91 @@ export function UserProfile({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl p-1.5 space-y-1">
           <button
             onClick={() => {
               onSettings?.();
               setIsOpen(false);
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#94a3b8] hover:text-white hover:bg-white/[0.04] transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#94a3b8] hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <Settings className="h-4 w-4" />
             Settings
           </button>
+
+          {/* Temperature Unit Switcher */}
+          <div
+            className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-[#94a3b8] hover:bg-white/[0.04] select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2.5">
+              <Thermometer className="h-4 w-4 text-indigo-400" />
+              <span className="text-xs font-medium text-white/80">Unit</span>
+            </div>
+
+            <div className="relative flex items-center bg-white/[0.06] border border-white/[0.08] p-0.5 rounded-lg">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUnit("C");
+                }}
+                className={`relative z-10 px-2 py-0.5 text-xs font-medium rounded-md transition-colors ${
+                  unit === "C"
+                    ? "text-white font-semibold"
+                    : "text-white/40 hover:text-white/80"
+                }`}
+              >
+                {unit === "C" && (
+                  <motion.div
+                    layoutId="activeUserPill"
+                    className="absolute inset-0 bg-indigo-600 rounded-md shadow-sm"
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <span className="relative z-10">°C</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUnit("F");
+                }}
+                className={`relative z-10 px-2 py-0.5 text-xs font-medium rounded-md transition-colors ${
+                  unit === "F"
+                    ? "text-white font-semibold"
+                    : "text-white/40 hover:text-white/80"
+                }`}
+              >
+                {unit === "F" && (
+                  <motion.div
+                    layoutId="activeUserPill"
+                    className="absolute inset-0 bg-indigo-600 rounded-md shadow-sm"
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <span className="relative z-10">°F</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="h-px bg-white/[0.06]" />
+
           <button
             onClick={() => {
               onLogout?.();
               setIsOpen(false);
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Logout

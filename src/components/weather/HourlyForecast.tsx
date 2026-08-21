@@ -1,6 +1,7 @@
 "use client";
 
 import { Cloud, Sun, CloudRain, CloudSnow } from "lucide-react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface HourlyData {
   hour: string;
@@ -14,6 +15,8 @@ interface HourlyForecastProps {
 }
 
 export function HourlyForecast({ data }: HourlyForecastProps) {
+  const { convert } = useTemperatureUnit();
+
   const getWeatherIcon = (condition: string) => {
     const c = condition.toLowerCase();
     if (c.includes("clear") || c.includes("sunny"))
@@ -51,7 +54,7 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
             </div>
             <div className="my-2">{getWeatherIcon(hour.condition)}</div>
             <div className="text-sm font-bold text-white">
-              {hour.temperature}°
+              {convert(hour.temperature)}°
             </div>
           </div>
         ))}

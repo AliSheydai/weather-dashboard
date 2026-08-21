@@ -1,6 +1,7 @@
 "use client";
 
 import { Cloud, Sun, CloudRain, CloudSnow } from "lucide-react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface DailyData {
   day: string;
@@ -15,6 +16,8 @@ interface DailyForecastProps {
 }
 
 export function DailyForecast({ data }: DailyForecastProps) {
+  const { convert } = useTemperatureUnit();
+
   const getWeatherIcon = (condition: string) => {
     const c = condition.toLowerCase();
     if (c.includes("clear") || c.includes("sunny"))
@@ -65,7 +68,7 @@ export function DailyForecast({ data }: DailyForecastProps) {
                 {getWeatherIcon(day.condition)}
               </div>
               <div className="w-12 text-right text-sm text-[#64748b]">
-                {day.minTemp}°
+                {convert(day.minTemp)}°
               </div>
               <div className="flex-1 mx-4 h-2 bg-[#1e1e2e] rounded-full overflow-hidden relative">
                 <div
@@ -77,7 +80,7 @@ export function DailyForecast({ data }: DailyForecastProps) {
                 />
               </div>
               <div className="w-12 text-right text-sm font-medium text-white">
-                {day.maxTemp}°
+                {convert(day.maxTemp)}°
               </div>
             </div>
           );

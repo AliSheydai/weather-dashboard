@@ -14,6 +14,8 @@ import {
 } from "recharts";
 import { Thermometer, Wind, Droplets, TrendingUp, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
+import { TemperatureUnit } from "@/lib/temperature";
 
 interface FeelsLikeModalProps {
   feelsLike: number;
@@ -71,19 +73,21 @@ function getFeelsLikeDriver(
 function getFeelsLikeInsight(
   diff: number,
   feelsLike: number,
-  actualTemp: number
+  actualTemp: number,
+  unit: TemperatureUnit = "C"
 ): string {
   const absDiff = Math.abs(diff);
-  if (diff > 3)
-    return `It feels ${absDiff}° warmer than the actual ${actualTemp}°C due to high humidity. Your body works harder to cool down in these conditions. Stay hydrated, wear light breathable clothing, and take breaks in air-conditioned spaces during peak heat.`;
+  const threshold = unit === "F" ? 5 : 3;
+  if (diff > threshold)
+    return `It feels ${absDiff}° warmer than the actual ${actualTemp}°${unit} due to high humidity. Your body works harder to cool down in these conditions. Stay hydrated, wear light breathable clothing, and take breaks in air-conditioned spaces during peak heat.`;
   if (diff > 0)
     return `Slightly warmer perception (+${diff}°) due to moderate humidity. Conditions are comfortable for most activities. Light clothing is appropriate. Keep water accessible for outdoor activities.`;
-  if (diff > -3)
-    return `Feels approximately the same as the actual temperature. Wind and humidity are balanced, creating stable perceived conditions. Standard clothing recommendations apply for the current ${actualTemp}°C.`;
-  return `It feels ${absDiff}° colder than the actual ${actualTemp}°C due to wind chill. Layer up to retain body heat, especially when exposed to wind. Cover extremities (hands, ears) as they lose heat fastest. Wind-resistant outer layers are recommended.`;
+  if (diff > -threshold)
+    return `Feels approximately the same as the actual temperature. Wind and humidity are balanced, creating stable perceived conditions. Standard clothing recommendations apply for the current ${actualTemp}°${unit}.`;
+  return `It feels ${absDiff}° colder than the actual ${actualTemp}°${unit} due to wind chill. Layer up to retain body heat, especially when exposed to wind. Cover extremities (hands, ears) as they lose heat fastest. Wind-resistant outer layers are recommended.`;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, unit = "C" }: any) => {
   if (active && payload && payload.length) {
     const actual = payload.find((p: any) => p.dataKey === "actual");
     const feels = payload.find((p: any) => p.dataKey === "feelsLike");
@@ -93,25 +97,25 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-white/50 text-[10px] mb-1">{label}</p>
         <div className="space-y-0.5">
           <p className="text-orange-400 text-sm">
-            Actual: {actual?.value}°C
+            Actual: {actual?.value}°{unit}
           </p>
           <p className="text-cyan-400 text-sm">
-            Feels Like: {feels?.value}°C
+            Feels Like: {feels?.value}°{unit}
           </p>
           <div className="border-t border-white/[0.06] pt-1 mt-1">
             <p
               className="text-xs font-medium"
               style={{
                 color:
-                  diff > 2
+                  diff > (unit === "F" ? 3.6 : 2)
                     ? "#f97316"
-                    : diff < -2
+                    : diff < (unit === "F" ? -3.6 : -2)
                     ? "#06b6d4"
                     : "rgba(255,255,255,0.5)",
               }}
             >
               Difference: {diff > 0 ? "+" : ""}
-              {diff.toFixed(1)}°C
+              {diff.toFixed(1)}°{unit}
             </p>
           </div>
         </div>
@@ -125,12 +129,17 @@ export function FeelsLikeModal({
   feelsLike,
   actualTemp,
 }: FeelsLikeModalProps) {
+  const { convert, convertDiff, unit, unitSymbol } = useTemperatureUnit();
+
+  const convertedActual = convert(actualTemp);
+  const convertedFeelsLike = convert(feelsLike);
+
   const hourlyData = useMemo(
-    () => generateHourlyData(actualTemp, feelsLike),
-    [actualTemp, feelsLike]
+    () => generateHourlyData(convertedActual, convertedFeelsLike),
+    [convertedActual, convertedFeelsLike]
   );
 
-  const currentDiff = feelsLike - actualTemp;
+  const currentDiff = convertedFeelsLike - convertedActual;
   const maxDiff = useMemo(
     () => Math.max(...hourlyData.map((d) => Math.abs(d.diff))),
     [hourlyData]
@@ -151,19 +160,20 @@ export function FeelsLikeModal({
     [hourlyData]
   );
 
+  const diffThreshold = unit === "F" ? 3.6 : 2;
   const driver = getFeelsLikeDriver(currentDiff, 50);
 
   const diffColor =
-    currentDiff > 2
+    currentDiff > diffThreshold
       ? "#f97316"
-      : currentDiff < -2
+      : currentDiff < -diffThreshold
       ? "#06b6d4"
       : "#a78bfa";
 
   const stats = [
     {
       label: "Feels Like",
-      value: `${feelsLike}°`,
+      value: `${convertedFeelsLike}°`,
       icon: <Thermometer className="w-3.5 h-3.5" />,
       color: "text-cyan-400",
     },
@@ -199,9 +209,9 @@ export function FeelsLikeModal({
         <div>
           <div className="flex items-end gap-1">
             <span className="text-5xl font-light text-white tracking-tight">
-              {feelsLike}
+              {convertedFeelsLike}
             </span>
-            <span className="text-xl text-white/30 mb-1">°C</span>
+            <span className="text-xl text-white/30 mb-1">{unitSymbol}</span>
           </div>
           <p className="text-[10px] text-white/25 uppercase tracking-widest mt-1">
             Feels Like
@@ -211,9 +221,9 @@ export function FeelsLikeModal({
         <div>
           <div className="flex items-end gap-1">
             <span className="text-3xl font-light text-white/60">
-              {actualTemp}
+              {convertedActual}
             </span>
-            <span className="text-lg text-white/20 mb-0.5">°C</span>
+            <span className="text-lg text-white/20 mb-0.5">{unitSymbol}</span>
           </div>
           <p className="text-[10px] text-white/20 uppercase tracking-widest mt-1">
             Actual
@@ -270,9 +280,9 @@ export function FeelsLikeModal({
               width={30}
               tickFormatter={(v: number) => `${v}°`}
             />
-            {/* Shade areas where difference > 3°C */}
+            {/* Shade areas where difference > threshold */}
             {hourlyData.map((d, i) => {
-              if (Math.abs(d.diff) > 3 && i > 0) {
+              if (Math.abs(d.diff) > (unit === "F" ? 5 : 3) && i > 0) {
                 return (
                   <ReferenceArea
                     key={`shade-${i}`}
@@ -286,7 +296,7 @@ export function FeelsLikeModal({
               }
               return null;
             })}
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip unit={unit} />} />
             <Line
               type="monotone"
               dataKey="actual"
@@ -330,7 +340,7 @@ export function FeelsLikeModal({
           <div className="flex items-center gap-2">
             <div className="w-3 h-2 bg-orange-400/10 rounded-sm" />
             <span className="text-[10px] text-white/20">
-              ±3°C difference zone
+              ±{unit === "F" ? "5°F" : "3°C"} difference zone
             </span>
           </div>
         </div>
@@ -391,7 +401,7 @@ export function FeelsLikeModal({
           </p>
         </div>
         <p className="text-xs text-white/50 leading-relaxed">
-          {getFeelsLikeInsight(currentDiff, feelsLike, actualTemp)}
+          {getFeelsLikeInsight(currentDiff, convertedFeelsLike, convertedActual, unit)}
         </p>
       </div>
     </div>

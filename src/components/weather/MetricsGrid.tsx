@@ -33,6 +33,7 @@ import { VisibilityModal } from "./VisibilityModal";
 import { AirQualityModal } from "./AirQualityModal";
 import { RainfallModal } from "./RainfallModal";
 import { AvgTemperatureModal } from "./AvgTemperatureModal";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface DailyData {
   day: string;
@@ -74,12 +75,17 @@ export function MetricsGrid({
   daily,
 }: MetricsGridProps) {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
+  const { convert, convertDiff } = useTemperatureUnit();
+
+  const convertedActual = convert(actualTemp);
+  const convertedFeelsLike = convert(feelsLike);
+  const tempDeltaRange = Math.round(convertDiff(3));
 
   const humidityStatus =
     humidity < 30 ? "Dry" : humidity < 60 ? "Comfortable" : humidity < 80 ? "Moderate" : "High";
   const visibilityStatus =
     visibility >= 10 ? "Excellent" : visibility >= 5 ? "Good" : visibility >= 2 ? "Moderate" : "Poor";
-  const feelsLikeDiff = feelsLike - actualTemp;
+  const feelsLikeDiff = convertedFeelsLike - convertedActual;
   const feelsLikeStatus =
     feelsLikeDiff > 0
       ? `+${feelsLikeDiff}° warmer than actual`
@@ -124,7 +130,7 @@ export function MetricsGrid({
           index={3}
           icon={<Thermometer className="h-3.5 w-3.5" />}
           title="Feels Like"
-          value={`${feelsLike}°`}
+          value={`${convertedFeelsLike}°`}
           subtitle={feelsLikeStatus}
           extra={<MiniFeelsLikeChart actualTemp={actualTemp} feelsLike={feelsLike} />}
           onShowMore={() => setOpenDialog("feelslike")}
@@ -134,8 +140,8 @@ export function MetricsGrid({
           index={4}
           icon={<ThermometerSun className="h-3.5 w-3.5" />}
           title="Avg Temperature"
-          value={`${Math.round((feelsLike + actualTemp) / 2)}°`}
-          subtitle={`Range: ${actualTemp - 3}° – ${actualTemp + 3}°`}
+          value={`${Math.round((convertedFeelsLike + convertedActual) / 2)}°`}
+          subtitle={`Range: ${convertedActual - tempDeltaRange}° – ${convertedActual + tempDeltaRange}°`}
           extra={<MiniAvgTempChart actualTemp={actualTemp} feelsLike={feelsLike} daily={daily} />}
           onShowMore={() => setOpenDialog("avgtemp")}
         />

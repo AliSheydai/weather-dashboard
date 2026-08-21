@@ -24,6 +24,7 @@ import {
 
 import { NavUser } from "@/components/sidebar/nav-user";
 import { useWeatherStore } from "@/stores/weatherStore";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 import {
   Sidebar,
   SidebarContent,
@@ -37,12 +38,13 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 const navItems = [
-  { title: "Dashboard", icon: LayoutDashboard, isActive: true },
-  { title: "Browse", icon: Compass },
-  { title: "Map", icon: Map },
-  { title: "Metrics", icon: BarChart3 },
+  { title: "Dashboard", icon: LayoutDashboard, isActive: true, link: "/dashboard" },
+  { title: "Browse", icon: Compass, link: "/browse" },
+  { title: "Map", icon: Map, link: "/map" },
+  { title: "Metrics", icon: BarChart3, link: "/metrics" },
 ];
 
 const collections = [
@@ -68,6 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { open, toggleSidebar } = useSidebar();
   const [activeNav, setActiveNav] = React.useState("Dashboard");
   const weather = useWeatherStore((s) => s.current);
+  const { unit, convert } = useTemperatureUnit();
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -107,13 +110,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  tooltip={item.title}
-                  isActive={activeNav === item.title}
-                  onClick={() => setActiveNav(item.title)}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
+                <Link href={item.link}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={activeNav === item.title}
+                    onClick={() => setActiveNav(item.title)}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -186,9 +191,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </p>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold">
-                  {weather.temperature}°
+                  {convert(weather.temperature)}°
                 </span>
-                <span className="text-xs text-sidebar-foreground/60">C</span>
+                <span className="text-xs text-sidebar-foreground/60">{unit}</span>
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-sidebar-foreground/50">
                 <span>AQI {weather.aqi}</span>

@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { User } from "@/types/user";
 import { apiFetch } from "@/lib/apiConfig";
 
@@ -28,6 +28,7 @@ interface AuthState {
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   initialize: () => Promise<void>;
+  updateTemperatureUnit: (unit: "C" | "F") => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -73,9 +74,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem("auth_token", token);
       setAuthCookie(token);
     }
+
+    const storedUnit =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("temperature_unit") as "C" | "F" | null)
+        : null;
+    const temperatureUnit = (data.user?.temperatureUnit || storedUnit || "C") as "C" | "F";
+    if (typeof window !== "undefined") {
+      localStorage.setItem("temperature_unit", temperatureUnit);
+    }
+
     set({
       token: token || null,
-      user: data.user,
+      user: data.user ? { ...data.user, temperatureUnit } : null,
       isAuthenticated: true,
       isLoading: false,
     });
@@ -99,9 +110,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem("auth_token", token);
       setAuthCookie(token);
     }
+
+    const storedUnit =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("temperature_unit") as "C" | "F" | null)
+        : null;
+    const temperatureUnit = (data.user?.temperatureUnit || storedUnit || "C") as "C" | "F";
+    if (typeof window !== "undefined") {
+      localStorage.setItem("temperature_unit", temperatureUnit);
+    }
+
     set({
       token: token || null,
-      user: data.user,
+      user: data.user ? { ...data.user, temperatureUnit } : null,
       isAuthenticated: true,
       isLoading: false,
     });
@@ -135,7 +156,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (response.ok) {
         const user = await response.json();
-        set({ user, isAuthenticated: true, isLoading: false });
+        const storedUnit =
+          typeof window !== "undefined"
+            ? (localStorage.getItem("temperature_unit") as "C" | "F" | null)
+            : null;
+        const temperatureUnit = (user.temperatureUnit || storedUnit || "C") as "C" | "F";
+        if (typeof window !== "undefined") {
+          localStorage.setItem("temperature_unit", temperatureUnit);
+        }
+        set({
+          user: {
+            ...user,
+            temperatureUnit,
+          },
+          isAuthenticated: true,
+          isLoading: false,
+        });
       } else {
         localStorage.removeItem("auth_token");
         removeAuthCookie();
@@ -145,4 +181,59 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
     }
   },
+
+  updateTemperatureUnit: async (unit: "C" | "F") => {
+    // 1. Immediately store in localStorage so client preference is persisted
+    if (typeof window !== "undefined") {
+      localStorage.setItem("temperature_unit", unit);
+    }
+
+    // 2. Optimistically update user object in Zustand state
+    const currentUser = get().user;
+    if (currentUser) {
+      set({
+        user: {
+          ...currentUser,
+          temperatureUnit: unit,
+        },
+      });
+    }
+
+    const token =
+      get().token ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("auth_token") || getAuthCookie()
+        : null);
+
+    if (!token) return;
+
+    // 3. Persist to backend
+    try {
+      const response = await apiFetch("/users/preferences", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ temperatureUnit: unit }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        const current = get().user;
+        if (current) {
+          set({
+            user: {
+              ...current,
+              ...updatedUser,
+              temperatureUnit: unit, // ensure chosen unit stays active
+            },
+          });
+        }
+      }
+    } catch {
+      // Retain the user's explicit preference locally even if backend is temporarily offline
+    }
+  },
 }));
+

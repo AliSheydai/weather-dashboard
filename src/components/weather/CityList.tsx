@@ -1,6 +1,7 @@
 "use client";
 
 import { Star, Trash2, Clock } from "lucide-react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface CityData {
   name: string;
@@ -29,6 +30,8 @@ export function CityList({
   onRemove,
   title,
 }: CityListProps) {
+  const { convert } = useTemperatureUnit();
+
   const getWeatherIcon = (condition: string) => {
     const c = condition.toLowerCase();
     if (c.includes("clear") || c.includes("sunny")) return "☀️";
@@ -85,10 +88,10 @@ export function CityList({
               {!city.isHistory && city.temperature > 0 && (
                 <div className="text-right ml-3">
                   <div className="text-xl font-bold text-white">
-                    {city.temperature}°
+                    {convert(city.temperature)}°
                   </div>
                   <div className="text-xs text-[#64748b]">
-                    H:{city.high}° L:{city.low}°
+                    H:{convert(city.high)}° L:{convert(city.low)}°
                   </div>
                 </div>
               )}

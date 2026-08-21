@@ -32,10 +32,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
+import { motion } from "framer-motion"
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit"
+
 export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuthStore()
+  const { unit, setUnit } = useTemperatureUnit()
   const resetNotifications = useNotificationStore((s) => s.reset)
 
   const displayName = user?.name || "Guest"
@@ -46,6 +50,12 @@ export function NavUser() {
     resetNotifications()
     logout()
     router.push("/login")
+  }
+
+  const handleUnitToggle = (newUnit: "C" | "F", e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setUnit(newUnit)
   }
 
   return (
@@ -69,14 +79,14 @@ export function NavUser() {
             <ChevronsUpDown className="ml-auto size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-xl p-1.5"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <div className="flex items-center gap-2 px-1.5 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={avatarUrl} alt={displayName} />
                     <AvatarFallback className="rounded-lg">
@@ -95,28 +105,80 @@ export function NavUser() {
               <>
                 <DropdownMenuGroup>
                   <DropdownMenuItem>
-                    <User />
-                    Profile
+                    <User className="size-4 text-muted-foreground" />
+                    <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Thermometer />
-                    Temperature Unit
-                  </DropdownMenuItem>
+
+                  {/* Temperature Unit Switcher */}
+                  <div
+                    className="flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-colors hover:bg-accent/40 select-none"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2.5 text-sidebar-foreground">
+                      <Thermometer className="size-4 text-indigo-400" />
+                      <span className="text-xs font-medium">Temperature</span>
+                    </div>
+
+                    {/* Segmented Toggle Control */}
+                    <div className="relative flex items-center bg-white/[0.06] border border-white/[0.08] p-0.5 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={(e) => handleUnitToggle("C", e)}
+                        className={`relative z-10 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                          unit === "C"
+                            ? "text-white font-semibold"
+                            : "text-white/40 hover:text-white/80"
+                        }`}
+                      >
+                        {unit === "C" && (
+                          <motion.div
+                            layoutId="activeUnitPill"
+                            className="absolute inset-0 bg-indigo-600 rounded-md shadow-sm shadow-indigo-500/20"
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10">°C</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleUnitToggle("F", e)}
+                        className={`relative z-10 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                          unit === "F"
+                            ? "text-white font-semibold"
+                            : "text-white/40 hover:text-white/80"
+                        }`}
+                      >
+                        {unit === "F" && (
+                          <motion.div
+                            layoutId="activeUnitPill"
+                            className="absolute inset-0 bg-indigo-600 rounded-md shadow-sm shadow-indigo-500/20"
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10">°F</span>
+                      </button>
+                    </div>
+                  </div>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut />
-                  Log out
+                  <LogOut className="size-4 text-red-400" />
+                  <span className="text-red-400">Log out</span>
                 </DropdownMenuItem>
               </>
             ) : (
               <DropdownMenuItem onClick={() => router.push("/login")}>
-                <User />
-                Sign in
+                <User className="size-4" />
+                <span>Sign in</span>
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

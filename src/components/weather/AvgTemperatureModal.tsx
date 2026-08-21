@@ -22,6 +22,8 @@ import {
   BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
+import { TemperatureUnit } from "@/lib/temperature";
 
 interface AvgTemperatureModalProps {
   actualTemp: number;
@@ -31,7 +33,7 @@ interface AvgTemperatureModalProps {
 
 function getSeasonalAvg(): number {
   const month = new Date().getMonth();
-  // Approximate seasonal averages for temperate climate
+  // Approximate seasonal averages for temperate climate in Celsius
   const seasonalAverages = [
     2, 4, 8, 13, 18, 22, 25, 24, 20, 14, 8, 3, // Jan-Dec
   ];
@@ -79,23 +81,26 @@ function getTempInsight(
   todayAvg: number,
   weeklyAvg: number,
   seasonalAvg: number,
-  season: string
+  season: string,
+  unit: TemperatureUnit = "C"
 ): string {
   const diff = todayAvg - seasonalAvg;
   const absDiff = Math.abs(diff);
+  const diffThreshold = unit === "F" ? 9 : 5;
+  const mildThreshold = unit === "F" ? 3.6 : 2;
 
-  if (diff > 5)
-    return `Temperatures are significantly above the ${season} average by ${absDiff.toFixed(1)}°C. This is unusually warm for this time of year. Stay hydrated, wear light clothing, and limit midday outdoor exposure. Energy costs for cooling may be elevated.`;
-  if (diff > 2)
-    return `Temperatures are above the seasonal ${season} norm by ${absDiff.toFixed(1)}°C. Enjoy the warmer conditions — ideal for outdoor activities. Light layers are sufficient. Plants and gardens may need extra watering.`;
-  if (diff > -2)
+  if (diff > diffThreshold)
+    return `Temperatures are significantly above the ${season} average by ${absDiff.toFixed(1)}°${unit}. This is unusually warm for this time of year. Stay hydrated, wear light clothing, and limit midday outdoor exposure. Energy costs for cooling may be elevated.`;
+  if (diff > mildThreshold)
+    return `Temperatures are above the seasonal ${season} norm by ${absDiff.toFixed(1)}°${unit}. Enjoy the warmer conditions — ideal for outdoor activities. Light layers are sufficient. Plants and gardens may need extra watering.`;
+  if (diff > -mildThreshold)
     return `Temperatures are near the ${season} average, staying within the normal range. Standard seasonal clothing and activity levels are appropriate. A typical day for this time of year with comfortable conditions.`;
-  if (diff > -5)
-    return `Temperatures are below the ${season} average by ${absDiff.toFixed(1)}°C. Layer up for outdoor activities and ensure indoor heating is adequate. Check on elderly neighbors and bring pets indoors.`;
-  return `Temperatures are significantly below the ${season} norm by ${absDiff.toFixed(1)}°C. This is unusually cold — dress in warm layers, limit outdoor exposure, and watch for ice on roads and walkways. Ensure pipes are insulated against freezing.`;
+  if (diff > -diffThreshold)
+    return `Temperatures are below the ${season} average by ${absDiff.toFixed(1)}°${unit}. Layer up for outdoor activities and ensure indoor heating is adequate. Check on elderly neighbors and bring pets indoors.`;
+  return `Temperatures are significantly below the ${season} norm by ${absDiff.toFixed(1)}°${unit}. This is unusually cold — dress in warm layers, limit outdoor exposure, and watch for ice on roads and walkways. Ensure pipes are insulated against freezing.`;
 }
 
-const TempTooltip = ({ active, payload, label }: any) => {
+const TempTooltip = ({ active, payload, label, unit = "C" }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -103,16 +108,16 @@ const TempTooltip = ({ active, payload, label }: any) => {
         <p className="text-white/50 text-[10px] mb-1">{data.day}</p>
         {data.avg !== undefined && (
           <p className="text-white font-medium text-sm">
-            Avg: {data.avg}°C
+            Avg: {data.avg}°{unit}
           </p>
         )}
         {data.min !== undefined && data.max !== undefined && (
           <div className="flex gap-3 mt-0.5">
             <span className="text-[10px] text-blue-400">
-              Low: {data.min}°
+              Low: {data.min}°{unit}
             </span>
             <span className="text-[10px] text-orange-400">
-              High: {data.max}°
+              High: {data.max}°{unit}
             </span>
           </div>
         )}
@@ -122,7 +127,7 @@ const TempTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const DeviationTooltip = ({ active, payload, label }: any) => {
+const DeviationTooltip = ({ active, payload, label, unit = "C" }: any) => {
   if (active && payload && payload.length) {
     const val = payload[0].value;
     return (
@@ -133,7 +138,7 @@ const DeviationTooltip = ({ active, payload, label }: any) => {
           style={{ color: val >= 0 ? "#f97316" : "#3b82f6" }}
         >
           {val > 0 ? "+" : ""}
-          {val.toFixed(1)}°C from seasonal avg
+          {val.toFixed(1)}°{unit} from seasonal avg
         </p>
       </div>
     );
@@ -146,13 +151,27 @@ export function AvgTemperatureModal({
   feelsLike,
   daily,
 }: AvgTemperatureModalProps) {
-  const todayAvg = Math.round(((actualTemp + feelsLike) / 2) * 10) / 10;
-  const seasonalAvg = getSeasonalAvg();
+  const { convert, convertDiff, unit, unitSymbol } = useTemperatureUnit();
+
+  const convertedActual = convert(actualTemp);
+  const convertedFeelsLike = convert(feelsLike);
+  const todayAvg = Math.round(((convertedActual + convertedFeelsLike) / 2) * 10) / 10;
+  const seasonalAvg = convert(getSeasonalAvg());
   const season = getSeasonName();
 
+  const convertedDaily = useMemo(
+    () =>
+      daily?.map((d) => ({
+        ...d,
+        minTemp: convert(d.minTemp),
+        maxTemp: convert(d.maxTemp),
+      })),
+    [daily, convert]
+  );
+
   const week7Data = useMemo(
-    () => generate7DayData(todayAvg, daily),
-    [todayAvg, daily]
+    () => generate7DayData(todayAvg, convertedDaily),
+    [todayAvg, convertedDaily]
   );
 
   const weeklyAvg = useMemo(
@@ -163,7 +182,7 @@ export function AvgTemperatureModal({
     [week7Data]
   );
 
-  const deviationFromSeasonal = todayAvg - seasonalAvg;
+  const deviationFromSeasonal = Math.round((todayAvg - seasonalAvg) * 10) / 10;
 
   // Deviation bar chart data
   const deviationData = useMemo(
@@ -175,22 +194,24 @@ export function AvgTemperatureModal({
     [week7Data, seasonalAvg]
   );
 
+  const mildDeviationThreshold = unit === "F" ? 3.6 : 2;
+
   const stats = [
     {
       label: "Today's Avg",
-      value: `${todayAvg}°C`,
+      value: `${todayAvg}${unitSymbol}`,
       icon: <ThermometerSun className="w-3.5 h-3.5" />,
       color: "text-orange-400",
     },
     {
       label: "Weekly Avg",
-      value: `${weeklyAvg}°C`,
+      value: `${weeklyAvg}${unitSymbol}`,
       icon: <Calendar className="w-3.5 h-3.5" />,
       color: "text-white",
     },
     {
       label: `${season} Avg`,
-      value: `${seasonalAvg}°C`,
+      value: `${seasonalAvg}${unitSymbol}`,
       icon: <BarChart3 className="w-3.5 h-3.5" />,
       color: "text-white/60",
     },
@@ -204,9 +225,9 @@ export function AvgTemperatureModal({
           <TrendingDown className="w-3.5 h-3.5" />
         ),
       color:
-        deviationFromSeasonal > 2
+        deviationFromSeasonal > mildDeviationThreshold
           ? "text-orange-400"
-          : deviationFromSeasonal < -2
+          : deviationFromSeasonal < -mildDeviationThreshold
           ? "text-blue-400"
           : "text-white",
     },
@@ -218,28 +239,28 @@ export function AvgTemperatureModal({
       <div className="flex items-center gap-4">
         <div className="text-5xl font-light text-white tracking-tight">
           {todayAvg}
-          <span className="text-lg text-white/30 ml-0.5">°C</span>
+          <span className="text-lg text-white/30 ml-0.5">{unitSymbol}</span>
         </div>
         <div>
           <span
             className="text-xs font-medium px-2.5 py-0.5 rounded-full"
             style={{
               backgroundColor:
-                deviationFromSeasonal > 2
+                deviationFromSeasonal > mildDeviationThreshold
                   ? "rgba(249,115,22,0.1)"
-                  : deviationFromSeasonal < -2
+                  : deviationFromSeasonal < -mildDeviationThreshold
                   ? "rgba(59,130,246,0.1)"
                   : "rgba(255,255,255,0.05)",
               color:
-                deviationFromSeasonal > 2
+                deviationFromSeasonal > mildDeviationThreshold
                   ? "#f97316"
-                  : deviationFromSeasonal < -2
+                  : deviationFromSeasonal < -mildDeviationThreshold
                   ? "#3b82f6"
                   : "rgba(255,255,255,0.5)",
               border: `1px solid ${
-                deviationFromSeasonal > 2
+                deviationFromSeasonal > mildDeviationThreshold
                   ? "rgba(249,115,22,0.2)"
-                  : deviationFromSeasonal < -2
+                  : deviationFromSeasonal < -mildDeviationThreshold
                   ? "rgba(59,130,246,0.2)"
                   : "rgba(255,255,255,0.06)"
               }`,
@@ -249,7 +270,7 @@ export function AvgTemperatureModal({
             {deviationFromSeasonal.toFixed(1)}° vs {season} avg
           </span>
           <p className="text-xs text-white/30 mt-1">
-            {Math.round(actualTemp)}° actual / {feelsLike}° feels like
+            {convertedActual}° actual / {convertedFeelsLike}° feels like
           </p>
         </div>
       </div>
@@ -298,7 +319,7 @@ export function AvgTemperatureModal({
                 fontSize: 9,
               }}
             />
-            <Tooltip content={<TempTooltip />} />
+            <Tooltip content={<TempTooltip unit={unit} />} />
             <Line
               type="monotone"
               dataKey="avg"
@@ -365,7 +386,7 @@ export function AvgTemperatureModal({
               stroke="rgba(255,255,255,0.1)"
               strokeWidth={1}
             />
-            <Tooltip content={<DeviationTooltip />} cursor={false} />
+            <Tooltip content={<DeviationTooltip unit={unit} />} cursor={false} />
             <Bar dataKey="deviation" radius={[4, 4, 0, 0]} animationDuration={800}>
               {deviationData.map((entry, index) => (
                 <Cell
@@ -413,7 +434,7 @@ export function AvgTemperatureModal({
           </p>
         </div>
         <p className="text-xs text-white/50 leading-relaxed">
-          {getTempInsight(todayAvg, weeklyAvg, seasonalAvg, season)}
+          {getTempInsight(todayAvg, weeklyAvg, seasonalAvg, season, unit)}
         </p>
       </div>
     </div>

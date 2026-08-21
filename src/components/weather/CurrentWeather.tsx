@@ -1,6 +1,7 @@
 "use client";
 
 import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning } from "lucide-react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface CurrentWeatherProps {
   temperature: number;
@@ -16,6 +17,8 @@ export function CurrentWeather({
   description,
   feelsLike,
 }: CurrentWeatherProps) {
+  const { convert } = useTemperatureUnit();
+
   const getWeatherIcon = () => {
     const c = condition.toLowerCase();
     if (c.includes("clear") || c.includes("sunny"))
@@ -48,13 +51,13 @@ export function CurrentWeather({
         {/* Temperature and condition */}
         <div>
           <div className="text-8xl font-bold text-white tracking-tighter">
-            {temperature}°
+            {convert(temperature)}°
           </div>
           <p className="text-xl text-[#94a3b8] mt-2 capitalize">{description}</p>
           <div className="flex items-center gap-4 mt-4">
             <div className="flex items-center gap-1.5 text-sm text-[#64748b]">
               <span className="text-[#94a3b8]">Feels like</span>
-              <span className="text-white font-medium">{feelsLike}°</span>
+              <span className="text-white font-medium">{convert(feelsLike)}°</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-[#475569]" />
             <div className="text-sm text-[#64748b]">{getCurrentTime()}</div>

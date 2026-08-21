@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface DailyData {
   day: string;
@@ -49,6 +50,7 @@ export function WeeklyForecastCompact({
   selectedDayIndex,
   onDaySelect,
 }: WeeklyForecastCompactProps) {
+  const { convert } = useTemperatureUnit();
   const allTemps = data.flatMap((d) => [d.minTemp, d.maxTemp]);
   const minTemp = Math.min(...allTemps);
   const maxTemp = Math.max(...allTemps);
@@ -137,7 +139,7 @@ export function WeeklyForecastCompact({
                 {getWeatherIcon(day.condition)}
               </div>
               <span className="w-6 text-right text-[11px] text-white/30">
-                {day.minTemp}°
+                {convert(day.minTemp)}°
               </span>
               <div className="flex-1 h-1 bg-white/[0.06] rounded-full overflow-hidden relative mx-0.5">
                 <div
@@ -152,7 +154,7 @@ export function WeeklyForecastCompact({
                 />
               </div>
               <span className="w-6 text-right text-[11px] font-medium text-white/70">
-                {day.maxTemp}°
+                {convert(day.maxTemp)}°
               </span>
             </motion.button>
           );

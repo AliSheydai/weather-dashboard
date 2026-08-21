@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 
 interface HourlyData {
   hour: string;
@@ -100,6 +101,8 @@ export function TemperatureCard({
   selectedHourIndex,
   onHourSelect,
 }: TemperatureCardProps) {
+  const { convert, unitSymbol } = useTemperatureUnit();
+
   const background = useMemo(
     () => getWeatherBackground(condition, sunriseTimestamp, sunsetTimestamp, timezone),
     [condition, sunriseTimestamp, sunsetTimestamp, timezone]
@@ -117,14 +120,13 @@ export function TemperatureCard({
   const maxHourIndex = hourly.length - 1;
   const VISIBLE_COUNT = 5;
 
-  // Sliding window start index
+  const [prevDayIndex, setPrevDayIndex] = useState(selectedDayIndex);
   const [windowStart, setWindowStart] = useState(0);
-  const maxWindowStart = Math.max(0, hourly.length - VISIBLE_COUNT);
-
-  // Reset window when hour selection or city/day changes
-  useEffect(() => {
+  if (prevDayIndex !== selectedDayIndex) {
+    setPrevDayIndex(selectedDayIndex);
     setWindowStart(0);
-  }, [selectedDayIndex]);
+  }
+  const maxWindowStart = Math.max(0, hourly.length - VISIBLE_COUNT);
 
   const handlePrevHour = useCallback(() => {
     if (selectedHourIndex === null) {
@@ -225,7 +227,7 @@ export function TemperatureCard({
         <div className="flex-1 flex flex-col justify-center min-h-0">
           <AnimatePresence mode="wait">
             <motion.div
-              key={`${selectedDayIndex}-${selectedHourIndex}`}
+              key={`${selectedDayIndex}-${selectedHourIndex}-${unitSymbol}`}
               variants={variants}
               initial="enter"
               animate="center"
@@ -234,10 +236,10 @@ export function TemperatureCard({
             >
               <div className="flex items-start gap-1">
                 <span className="text-[3rem] sm:text-[4rem] lg:text-[5rem] font-light leading-none tracking-tighter text-white drop-shadow-lg">
-                  {displayTemp}
+                  {convert(displayTemp)}
                 </span>
                 <span className="text-xl font-light mt-2 text-white/60 drop-shadow">
-                  °C
+                  {unitSymbol}
                 </span>
               </div>
               <div className="mt-1 flex items-center gap-3">
@@ -247,17 +249,17 @@ export function TemperatureCard({
               </div>
               {selectedDayIndex === 0 && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-white/55">
-                  <span>Feels like {displayFeelsLike}°</span>
+                  <span>Feels like {convert(displayFeelsLike)}°</span>
                   <span className="w-1 h-1 rounded-full bg-white/25" />
                   <span>
-                    H:{todayTemp}° L:{daily[0]?.minTemp}°
+                    H:{convert(todayTemp)}° L:{convert(daily[0]?.minTemp ?? 0)}°
                   </span>
                 </div>
               )}
               {selectedDayIndex !== 0 && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-white/55">
                   <span>
-                    H:{selectedDay.maxTemp}° L:{selectedDay.minTemp}°
+                    H:{convert(selectedDay.maxTemp)}° L:{convert(selectedDay.minTemp)}°
                   </span>
                 </div>
               )}
@@ -307,7 +309,7 @@ export function TemperatureCard({
                       </span>
                       {getWeatherIcon(h.condition, "sm", isDay)}
                       <span className="text-[11px] font-semibold mt-1 text-white/80">
-                        {h.temperature}°
+                        {convert(h.temperature)}°
                       </span>
                     </motion.button>
                   );

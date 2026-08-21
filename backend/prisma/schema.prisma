@@ -12,6 +12,7 @@ model User {
   email         String         @unique
   passwordHash  String         @map("password_hash")
   name          String?
+  temperatureUnit String       @default("C") @map("temperature_unit")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   favorites     FavoriteCity[]
