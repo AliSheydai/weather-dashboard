@@ -56,7 +56,7 @@ describe("AddCityModal", () => {
     useAuthStore.setState({
       token: "test-token",
       isAuthenticated: true,
-      user: { id: "user-1", email: "test@example.com", name: "Test User", temperatureUnit: "C" },
+      user: { id: "user-1", email: "test@example.com", name: "Test User", temperatureUnit: "C", avatar: null, defaultCity: "New York" },
       isLoading: false,
     });
   });

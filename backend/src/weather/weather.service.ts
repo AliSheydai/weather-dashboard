@@ -23,6 +23,49 @@ export class WeatherService {
     );
   }
 
+  async reverseGeocode(lat: number, lon: number): Promise<{ city: string }> {
+    try {
+      // OWM Geocoding API — returns the most accurate city for the given coordinates
+      const url = `https://api.openweathermap.org/geo/1.0/reverse`;
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          params: {
+            lat,
+            lon,
+            limit: 1,
+            appid: this.apiKey,
+          },
+        }),
+      );
+
+      const results = response.data;
+      if (!Array.isArray(results) || results.length === 0) {
+        throw new HttpException(
+          'Could not determine city from coordinates',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const city = results[0].name as string;
+      if (!city) {
+        throw new HttpException(
+          'Could not determine city from coordinates',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return { city };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Reverse geocoding failed',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+  }
+
   async getCurrentWeather(city: string) {
     try {
       const url = `${this.baseUrl}/weather`;

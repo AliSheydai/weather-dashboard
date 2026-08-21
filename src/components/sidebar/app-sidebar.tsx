@@ -22,6 +22,7 @@ import {
   Leaf,
   Check,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 import { NavUser } from "@/components/sidebar/nav-user";
@@ -31,6 +32,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiConfig";
 import {
   Sidebar,
   SidebarContent,
@@ -48,9 +50,9 @@ import Link from "next/link";
 
 const navItems = [
   { title: "Dashboard", icon: LayoutDashboard, isActive: true, link: "/dashboard" },
-  { title: "Browse", icon: Compass, link: "/browse" },
-  { title: "Map", icon: Map, link: "/map" },
-  { title: "Metrics", icon: BarChart3, link: "/metrics" },
+  // { title: "Browse", icon: Compass, link: "/browse" },
+  // { title: "Map", icon: Map, link: "/map" },
+  // { title: "Metrics", icon: BarChart3, link: "/metrics" },
 ];
 
 const collections = [
@@ -89,6 +91,94 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
 
   const isRefreshing = refreshState === "refreshing" || isStoreLoading;
+
+  // --- Use Current Location state machine ---
+  type LocationState = "idle" | "requesting" | "detecting" | "fetching" | "success" | "error";
+  const [locationState, setLocationState] = React.useState<LocationState>("idle");
+  const [locationError, setLocationError] = React.useState<string | null>(null);
+
+  const isLocating = locationState === "requesting" || locationState === "detecting" || locationState === "fetching";
+
+  const handleUseCurrentLocation = React.useCallback(async () => {
+    if (isLocating) return;
+
+    if (!navigator.geolocation) {
+      setLocationState("error");
+      setLocationError("Geolocation is not supported by your browser");
+      setTimeout(() => { setLocationState("idle"); setLocationError(null); }, 3000);
+      return;
+    }
+
+    setLocationState("requesting");
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          // Step 1: Reverse-geocode via backend (or Next.js API route if remote backend not yet redeployed)
+          setLocationState("detecting");
+          const { latitude, longitude } = pos.coords;
+          let geocodeRes = await apiFetch(
+            `/weather/geocode?lat=${latitude}&lon=${longitude}`
+          );
+
+          if (!geocodeRes.ok && geocodeRes.status === 404) {
+            geocodeRes = await fetch(
+              `/api/weather/geocode?lat=${latitude}&lon=${longitude}`
+            );
+          }
+
+          if (!geocodeRes.ok) {
+            const msg = geocodeRes.status === 404
+              ? "Could not identify your city from coordinates"
+              : "Location detection failed. Please try again.";
+            setLocationState("error");
+            setLocationError(msg);
+            setTimeout(() => { setLocationState("idle"); setLocationError(null); }, 3000);
+            return;
+          }
+
+          const { city } = await geocodeRes.json() as { city: string };
+
+          // Step 2: Fetch weather for the resolved city — identical to a manual search
+          setLocationState("fetching");
+          await fetchAllWeather(city, token || undefined);
+
+          const storeError = useWeatherStore.getState().error;
+          if (storeError) {
+            setLocationState("error");
+            setLocationError(storeError);
+            setTimeout(() => { setLocationState("idle"); setLocationError(null); }, 3000);
+            return;
+          }
+
+          // Refresh history for authenticated users
+          if (isAuthenticated && token) {
+            fetchHistory(token);
+          }
+
+          setLocationState("success");
+          setTimeout(() => { setLocationState("idle"); }, 2000);
+        } catch {
+          setLocationState("error");
+          setLocationError("Failed to fetch location data. Please try again.");
+          setTimeout(() => { setLocationState("idle"); setLocationError(null); }, 3000);
+        }
+      },
+      (err) => {
+        const msg =
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied. Please allow access in your browser settings."
+            : err.code === err.POSITION_UNAVAILABLE
+            ? "Your device location is currently unavailable."
+            : "Location request timed out. Please try again.";
+        setLocationState("error");
+        setLocationError(msg);
+        setTimeout(() => { setLocationState("idle"); setLocationError(null); }, 3000);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [isLocating, fetchAllWeather, token, isAuthenticated, fetchHistory]);
 
   const handleRefresh = React.useCallback(async () => {
     if (isRefreshing) return;
@@ -190,29 +280,64 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
-                tooltip="Use Current Location"
-                onClick={() => {
-                  if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                      async (pos) => {
-                        try {
-                          const res = await fetch(
-                            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`
-                          );
-                          const data = await res.json();
-                          const city = data.city || data.locality || "New York";
-                          fetchAllWeather(city);
-                        } catch {
-                          handleRefresh();
-                        }
-                      },
-                      () => handleRefresh()
-                    );
-                  }
-                }}
+                tooltip={
+                  locationState === "requesting"
+                    ? "Requesting location permission…"
+                    : locationState === "detecting"
+                    ? "Detecting your city…"
+                    : locationState === "fetching"
+                    ? "Fetching weather for your location…"
+                    : locationState === "success"
+                    ? "Location found!"
+                    : locationState === "error"
+                    ? locationError || "Location detection failed"
+                    : "Use Current Location"
+                }
+                onClick={handleUseCurrentLocation}
+                disabled={isLocating}
+                aria-label="Use Current Location"
+                aria-busy={isLocating}
+                className={cn(
+                  "transition-all duration-200",
+                  locationState === "success" && "text-emerald-400 hover:text-emerald-300",
+                  locationState === "error" && "text-rose-400 hover:text-rose-300",
+                  isLocating && "opacity-80 cursor-not-allowed"
+                )}
               >
-                <LocateFixed />
-                <span>Use Current Location</span>
+                {locationState === "success" ? (
+                  <Check className="size-4 text-emerald-400 animate-in fade-in zoom-in duration-200" />
+                ) : locationState === "error" ? (
+                  <AlertCircle className="size-4 text-rose-400 animate-in fade-in zoom-in duration-200" />
+                ) : locationState === "detecting" || locationState === "fetching" ? (
+                  <Loader2 className="size-4 animate-spin text-indigo-400" />
+                ) : locationState === "requesting" ? (
+                  <LocateFixed className="size-4 animate-pulse text-indigo-400" />
+                ) : (
+                  <LocateFixed className="size-4" />
+                )}
+                <span>
+                  {locationState === "requesting"
+                    ? "Requesting…"
+                    : locationState === "detecting"
+                    ? "Detecting…"
+                    : locationState === "fetching"
+                    ? "Fetching…"
+                    : locationState === "success"
+                    ? "Located!"
+                    : locationState === "error"
+                    ? "Failed"
+                    : "Use Current Location"}
+                </span>
+                {locationState === "success" && (
+                  <span className="ml-auto text-[10px] font-medium text-emerald-400/90 group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">
+                    Done
+                  </span>
+                )}
+                {locationState === "error" && (
+                  <span className="ml-auto text-[10px] font-medium text-rose-400/90 group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">
+                    Retry
+                  </span>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
@@ -221,10 +346,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   refreshState === "refreshing"
                     ? "Refreshing weather..."
                     : refreshState === "success"
-                    ? "Weather updated!"
-                    : refreshState === "error"
-                    ? refreshError || "Failed to refresh"
-                    : "Refresh Weather"
+                      ? "Weather updated!"
+                      : refreshState === "error"
+                        ? refreshError || "Failed to refresh"
+                        : "Refresh Weather"
                 }
                 onClick={handleRefresh}
                 disabled={isRefreshing}
@@ -253,10 +378,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {refreshState === "refreshing"
                     ? "Refreshing..."
                     : refreshState === "success"
-                    ? "Updated!"
-                    : refreshState === "error"
-                    ? "Failed"
-                    : "Refresh Weather"}
+                      ? "Updated!"
+                      : refreshState === "error"
+                        ? "Failed"
+                        : "Refresh Weather"}
                 </span>
                 {refreshState === "success" && (
                   <span className="ml-auto text-[10px] font-medium text-emerald-400/90 group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">
@@ -274,7 +399,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
         {/* Collections */}
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel>Collections</SidebarGroupLabel>
           <SidebarMenu>
             {collections.map((item) => (
@@ -286,10 +411,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-        </SidebarGroup>
+        </SidebarGroup> */}
 
         {/* Explore */}
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel>Explore</SidebarGroupLabel>
           <SidebarMenu>
             {exploreItems.map((item) => (
@@ -304,7 +429,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-        </SidebarGroup>
+        </SidebarGroup> */}
 
         {/* Live Weather Widget */}
         {weather && (

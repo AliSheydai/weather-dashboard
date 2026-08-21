@@ -68,6 +68,8 @@ describe("AppSidebar - Quick Actions: Refresh Weather", () => {
         email: "test@example.com",
         name: "Test User",
         temperatureUnit: "C",
+        avatar: null,
+        defaultCity: "New York",
       },
       isLoading: false,
     });

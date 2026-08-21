@@ -9,6 +9,7 @@ import {
 import { WeatherService } from './weather.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WeatherQueryDto } from './dto/weather.dto';
+import { GeocodeQueryDto } from './dto/geocode.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import type { Request } from 'express';
 
@@ -38,6 +39,11 @@ export class WeatherController {
       });
     }
     return this.weatherService.getCurrentWeather(query.city);
+  }
+
+  @Get('geocode')
+  async reverseGeocode(@Query(ValidationPipe) query: GeocodeQueryDto) {
+    return this.weatherService.reverseGeocode(query.lat, query.lon);
   }
 
   @Get('hourly')
