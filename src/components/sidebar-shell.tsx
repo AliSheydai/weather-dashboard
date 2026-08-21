@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ProfileModal } from "@/components/user/ProfileModal";
 
 interface SidebarShellProps {
   children: React.ReactNode;
@@ -32,6 +33,10 @@ export function SidebarShell({ children, header }: SidebarShellProps) {
           {children}
         </main>
       </div>
+
+      {/* Profile Management Modal */}
+      <ProfileModal />
     </SidebarProvider>
   );
 }
+

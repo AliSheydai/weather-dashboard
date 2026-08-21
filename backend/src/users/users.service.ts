@@ -41,4 +41,22 @@ export class UsersService {
       data: { temperatureUnit },
     });
   }
+
+  async updateProfile(
+    id: string,
+    data: { name?: string; temperatureUnit?: 'C' | 'F' },
+  ): Promise<User> {
+    const updateData: { name?: string; temperatureUnit?: 'C' | 'F' } = {};
+    if (data.name !== undefined) {
+      updateData.name = data.name.trim();
+    }
+    if (data.temperatureUnit !== undefined) {
+      updateData.temperatureUnit = data.temperatureUnit;
+    }
+    return this.prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
+  }
 }
+

@@ -6,6 +6,8 @@ import { UserProfile } from "../user/UserProfile";
 import { MapPin, Star, Settings, Pencil } from "lucide-react";
 import Link from "next/link";
 
+import { useProfileModalStore } from "@/stores/profileModalStore";
+
 interface CityData {
   name: string;
   temperature: number;
@@ -56,6 +58,7 @@ export function WeatherSidebar({
   onLogout,
   onSettings,
 }: WeatherSidebarProps) {
+  const { openModal: openProfileModal } = useProfileModalStore();
   const defaultCities: CityData[] = [
     { name: "New York", temperature: 22, condition: "Cloudy", high: 29, low: 15 },
     { name: "London", temperature: 18, condition: "Rainy", high: 21, low: 12 },
@@ -129,7 +132,10 @@ export function WeatherSidebar({
       <div className="p-3 border-t border-white/[0.06]">
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => onSettings?.()}
+            onClick={() => {
+              if (onSettings) onSettings();
+              else openProfileModal("cities");
+            }}
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -137,7 +143,10 @@ export function WeatherSidebar({
           </button>
           <div className="w-px h-4 bg-white/[0.06]" />
           <button
-            onClick={() => onSettings?.()}
+            onClick={() => {
+              if (onSettings) onSettings();
+              else openProfileModal("general");
+            }}
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
           >
             <Settings className="h-3.5 w-3.5" />
@@ -148,3 +157,4 @@ export function WeatherSidebar({
     </div>
   );
 }
+

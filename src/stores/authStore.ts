@@ -29,6 +29,7 @@ interface AuthState {
   fetchProfile: () => Promise<void>;
   initialize: () => Promise<void>;
   updateTemperatureUnit: (unit: "C" | "F") => Promise<void>;
+  updateProfile: (data: { name?: string; temperatureUnit?: "C" | "F" }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -235,5 +236,90 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Retain the user's explicit preference locally even if backend is temporarily offline
     }
   },
+
+  updateProfile: async (data: { name?: string; temperatureUnit?: "C" | "F" }) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
+
+    // Optimistic update
+    set({
+      user: {
+        ...currentUser,
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.temperatureUnit !== undefined && { temperatureUnit: data.temperatureUnit }),
+      },
+    });
+
+    if (data.temperatureUnit) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("temperature_unit", data.temperatureUnit);
+      }
+    }
+
+    const token =
+      get().token ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("auth_token") || getAuthCookie()
+        : null);
+
+    if (!token) return;
+
+    let response = await apiFetch("/users/profile", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    // If /users/profile returned 404, try alternative endpoints
+    if (response.status === 404) {
+      response = await apiFetch("/users/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+    }
+
+    if (response.status === 404) {
+      response = await apiFetch("/users/preferences", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+    }
+
+    if (!response.ok) {
+      // Revert on failure
+      set({ user: currentUser });
+      const errData = await response.json().catch(() => ({}));
+      const message = Array.isArray(errData.message)
+        ? errData.message.join(", ")
+        : errData.message || "Failed to update profile";
+      throw new Error(message);
+    }
+
+    const updatedUser = await response.json();
+    const current = get().user;
+    if (current) {
+      set({
+        user: {
+          ...current,
+          ...updatedUser,
+          name: data.name || updatedUser.name || current.name,
+          temperatureUnit: updatedUser.temperatureUnit || current.temperatureUnit || "C",
+        },
+      });
+    }
+  },
 }));
+
+
 

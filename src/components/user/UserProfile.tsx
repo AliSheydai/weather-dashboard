@@ -1,6 +1,7 @@
 import { User, LogOut, Settings, ChevronDown, Thermometer } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useTemperatureUnit } from "@/hooks/useTemperatureUnit";
+import { useProfileModalStore } from "@/stores/profileModalStore";
 import { motion } from "framer-motion";
 
 interface UserProfileProps {
@@ -21,6 +22,7 @@ export function UserProfile({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { unit, setUnit } = useTemperatureUnit();
+  const { openModal: openProfileModal } = useProfileModalStore();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -81,13 +83,17 @@ export function UserProfile({
         <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#09090d] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl p-1.5 space-y-1">
           <button
             onClick={() => {
-              onSettings?.();
+              if (onSettings) {
+                onSettings();
+              } else {
+                openProfileModal("general");
+              }
               setIsOpen(false);
             }}
             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#94a3b8] hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <Settings className="h-4 w-4" />
-            Settings
+            Profile & Settings
           </button>
 
           {/* Temperature Unit Switcher */}

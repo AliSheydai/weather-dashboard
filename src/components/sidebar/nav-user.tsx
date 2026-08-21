@@ -34,12 +34,14 @@ import {
 
 import { motion } from "framer-motion"
 import { useTemperatureUnit } from "@/hooks/useTemperatureUnit"
+import { useProfileModalStore } from "@/stores/profileModalStore"
 
 export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuthStore()
   const { unit, setUnit } = useTemperatureUnit()
+  const { openModal: openProfileModal } = useProfileModalStore()
   const resetNotifications = useNotificationStore((s) => s.reset)
 
   const displayName = user?.name || "Guest"
@@ -104,7 +106,7 @@ export function NavUser() {
             {isAuthenticated ? (
               <>
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openProfileModal("general")}>
                     <User className="size-4 text-muted-foreground" />
                     <span>Profile</span>
                   </DropdownMenuItem>
